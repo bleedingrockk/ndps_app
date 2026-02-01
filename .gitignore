@@ -1,0 +1,130 @@
+# Indexing folder - contains indexing files
+backend/app/docs
+# Uploads folder - contains user-uploaded PDF files
+backend/uploads/
+uploads/
+# Secret folder - contains secret files
+backend/app/secret/
+# Output folder - contains generated output files
+backend/output/
+output/
+
+# Results folder - contains processed results (optional, uncomment if needed)
+# backend/results/
+# results/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+local_env/
+venv/
+ENV/
+env/
+.venv
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+*.env
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pytest
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.hypothesis/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# Secrets and credentials
+**/secret/
+*.pem
+*.key
+*.cert
+
+# Google Cloud credentials (specific patterns)
+*-*.json
+!package*.json
+!tsconfig*.json
+backend/app/secret/*.json
+
+# But allow metadata JSON files
+!**/faiss_metadata.json
+!**/chunks/**/*.json
+
+# Logs
+*.log
+logs/
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.swp
+
+# FastAPI
+.pytest_cache/
+
+# Static files (if generated)
+/static/*
+!/static/.gitkeep
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+
+# cursor files
+.cursorrules
+.cursorignore

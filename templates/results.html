@@ -1,0 +1,1820 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Legal Analysis Results</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-light: #eef2ff;
+            --text-primary: #111827;
+            --text-secondary: #6b7280;
+            --text-muted: #9ca3af;
+            --border: #e5e7eb;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f9fafb;
+            --bg-tertiary: #f3f4f6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            --radius: 8px;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 16px;
+            min-height: 100vh;
+            color: var(--text-primary);
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: var(--bg-primary);
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            padding: 20px;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 16px;
+            padding: 8px 16px;
+            background: var(--primary);
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .back-button:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .header-content h1 {
+            color: var(--text-primary);
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            letter-spacing: -0.5px;
+        }
+
+        .header-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            align-items: flex-end;
+        }
+
+        .workflow-id {
+            color: var(--text-secondary);
+            font-size: 11px;
+            font-family: 'SF Mono', Monaco, monospace;
+            background: var(--bg-secondary);
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+        }
+
+        .file-name {
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 500;
+            max-width: 250px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, var(--primary-light) 0%, #f0f4ff 100%);
+            border: 1px solid var(--border);
+            padding: 14px 12px;
+            border-radius: var(--radius);
+            text-align: center;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--primary);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .stat-number {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 4px;
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .section-group {
+            margin-bottom: 24px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 12px;
+            padding: 12px 16px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .section-title::before {
+            content: '📋';
+            font-size: 18px;
+        }
+
+        .section-item {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--primary);
+            padding: 14px;
+            margin-bottom: 10px;
+            border-radius: var(--radius);
+            transition: all 0.2s ease;
+        }
+
+        .section-item:hover {
+            border-left-color: var(--primary-dark);
+            box-shadow: var(--shadow-md);
+            transform: translateX(2px);
+        }
+
+        .section-number {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            background: var(--primary-light);
+            border-radius: 4px;
+        }
+
+        .section-content .section-field {
+            margin-bottom: 10px;
+        }
+
+        .section-content .section-field:last-child {
+            margin-bottom: 0;
+        }
+
+        .field-label {
+            font-weight: 700;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+            display: block;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .field-value {
+            color: var(--text-primary);
+            line-height: 1.6;
+            padding: 10px;
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            font-size: 13px;
+        }
+
+        .field-value.markdown-content {
+            background: transparent;
+            padding: 0;
+            border: none;
+        }
+
+        .field-value.markdown-content h1,
+        .field-value.markdown-content h2,
+        .field-value.markdown-content h3 {
+            margin-top: 12px;
+            margin-bottom: 6px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .field-value.markdown-content h1 {
+            font-size: 18px;
+        }
+
+        .field-value.markdown-content h2 {
+            font-size: 16px;
+        }
+
+        .field-value.markdown-content h3 {
+            font-size: 14px;
+        }
+
+        .field-value.markdown-content p {
+            margin-bottom: 8px;
+        }
+
+        .field-value.markdown-content ul,
+        .field-value.markdown-content ol {
+            margin-left: 18px;
+            margin-bottom: 8px;
+        }
+
+        .field-value.markdown-content li {
+            margin-bottom: 4px;
+        }
+
+        .field-value.markdown-content code {
+            background: var(--bg-tertiary);
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 12px;
+            color: var(--primary-dark);
+        }
+
+        .field-value.markdown-content pre {
+            background: var(--bg-tertiary);
+            padding: 10px;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin-bottom: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .field-value.markdown-content pre code {
+            background: none;
+            padding: 0;
+        }
+
+        .field-value.markdown-content blockquote {
+            border-left: 3px solid var(--primary);
+            padding-left: 12px;
+            margin: 10px 0;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .field-value.markdown-content strong {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .source {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid var(--border);
+            font-family: 'SF Mono', Monaco, monospace;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            word-break: break-all;
+        }
+
+        .source::before {
+            content: '🔗';
+            flex-shrink: 0;
+        }
+
+        .source a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .source a:hover {
+            text-decoration: underline;
+        }
+
+        .fir-facts {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            padding: 16px;
+            border-radius: var(--radius);
+            margin-bottom: 20px;
+            border: 1px solid #bae6fd;
+        }
+
+        .fir-facts h2 {
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .fir-facts h2::before {
+            content: '📄';
+            font-size: 18px;
+        }
+
+        .fir-fact-item {
+            margin-bottom: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #bae6fd;
+            border-left: 3px solid #0284c7;
+        }
+
+        .fir-fact-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .fir-fact-label {
+            font-weight: 700;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .fir-fact-value {
+            color: var(--text-primary);
+            line-height: 1.6;
+            font-size: 13px;
+        }
+
+        .next-steps {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            padding: 16px;
+            border-radius: var(--radius);
+            margin-bottom: 20px;
+            border: 1px solid #bbf7d0;
+        }
+
+        .next-steps h2 {
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .next-steps h2::before {
+            content: '✅';
+            font-size: 18px;
+        }
+
+        .next-steps-list {
+            list-style: none;
+        }
+
+        .next-steps-list li {
+            margin-bottom: 8px;
+            padding: 10px 12px 10px 32px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #bbf7d0;
+            border-left: 3px solid var(--success);
+            position: relative;
+        }
+
+        .next-steps-list li:last-child {
+            margin-bottom: 0;
+        }
+
+        .next-steps-list li::before {
+            content: '→';
+            position: absolute;
+            left: 10px;
+            top: 10px;
+            color: var(--success);
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .next-steps-item-content {
+            color: var(--text-primary);
+            line-height: 1.6;
+            font-size: 13px;
+        }
+
+        /* Dos and Don'ts Styles */
+        .dos-donts-container {
+            background: var(--bg-secondary);
+            padding: 20px;
+            border-radius: var(--radius);
+            margin-bottom: 20px;
+        }
+
+        .dos-donts-title {
+            color: var(--text-primary);
+            margin-bottom: 16px;
+            font-size: 18px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dos-donts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .dos-section,
+        .donts-section {
+            background: white;
+            border-radius: var(--radius);
+            padding: 16px;
+            border: 1px solid var(--border);
+        }
+
+        .dos-section {
+            border-left: 4px solid var(--success);
+        }
+
+        .donts-section {
+            border-left: 4px solid var(--error);
+        }
+
+        .dos-section h3,
+        .donts-section h3 {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dos-section h3 {
+            color: var(--success);
+        }
+
+        .donts-section h3 {
+            color: var(--error);
+        }
+
+        .dos-section h3::before {
+            content: '✓';
+            font-size: 18px;
+        }
+
+        .donts-section h3::before {
+            content: '✗';
+            font-size: 18px;
+        }
+
+        .dos-list,
+        .donts-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .dos-list li,
+        .donts-list li {
+            margin-bottom: 10px;
+            padding: 10px 12px 10px 32px;
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            position: relative;
+            line-height: 1.6;
+            font-size: 13px;
+            color: var(--text-primary);
+        }
+
+        .dos-list li:last-child,
+        .donts-list li:last-child {
+            margin-bottom: 0;
+        }
+
+        .dos-list li::before {
+            content: '✓';
+            position: absolute;
+            left: 10px;
+            top: 10px;
+            color: var(--success);
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .donts-list li::before {
+            content: '✗';
+            position: absolute;
+            left: 10px;
+            top: 10px;
+            color: var(--error);
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .dos-donts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Potential Prosecution Weaknesses Styles */
+        .prosecution-weaknesses {
+            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+            padding: 20px;
+            border-radius: var(--radius);
+            margin-bottom: 20px;
+            border: 1px solid #fde68a;
+        }
+
+        .prosecution-weaknesses-title {
+            color: #92400e;
+            margin-bottom: 16px;
+            font-size: 18px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .prosecution-weaknesses-title::before {
+            content: '⚠️';
+            font-size: 20px;
+        }
+
+        .weakness-item {
+            background: white;
+            border-radius: var(--radius);
+            padding: 16px;
+            margin-bottom: 12px;
+            border: 1px solid #fde68a;
+            border-left: 4px solid var(--warning);
+            transition: all 0.2s ease;
+        }
+
+        .weakness-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .weakness-item:hover {
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .weakness-heading {
+            font-size: 15px;
+            font-weight: 700;
+            color: #92400e;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .weakness-heading::before {
+            content: '⚠';
+            color: var(--warning);
+            font-size: 16px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .weakness-details {
+            color: var(--text-primary);
+            line-height: 1.7;
+            font-size: 13px;
+            padding: 12px;
+            background: #fffbeb;
+            border-radius: 6px;
+            border: 1px solid #fde68a;
+        }
+
+        .weakness-details p {
+            margin-bottom: 8px;
+        }
+
+        .weakness-details p:last-child {
+            margin-bottom: 0;
+        }
+
+        .weakness-details strong {
+            color: #92400e;
+            font-weight: 600;
+        }
+
+        /* Investigation Plan Styles */
+        .investigation-plan {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            padding: 20px;
+            border-radius: var(--radius);
+            margin-bottom: 20px;
+            border: 1px solid #bae6fd;
+        }
+
+        .investigation-plan-title {
+            color: var(--text-primary);
+            margin-bottom: 16px;
+            font-size: 18px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .investigation-plan-grid {
+            display: grid;
+            gap: 12px;
+        }
+
+        .investigation-step {
+            background: white;
+            border-radius: var(--radius);
+            border: 1px solid #bae6fd;
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+
+        .investigation-step:hover {
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .step-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 14px;
+            background: linear-gradient(135deg, #dbeafe 0%, #e0f2fe 100%);
+            border-bottom: 1px solid #bae6fd;
+        }
+
+        .step-number {
+            flex-shrink: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            font-weight: 700;
+            font-size: 14px;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+        }
+
+        .step-title-wrapper {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .step-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0 0 4px 0;
+            line-height: 1.4;
+        }
+
+        .step-date {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 600;
+            color: #0369a1;
+            background: #f0f9ff;
+            padding: 2px 8px;
+            border-radius: 4px;
+            border: 1px solid #bae6fd;
+        }
+
+        .step-content {
+            padding: 14px;
+            color: var(--text-primary);
+            line-height: 1.6;
+            font-size: 13px;
+        }
+
+        .step-content ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .step-content li {
+            margin-bottom: 6px;
+            line-height: 1.6;
+        }
+
+        .step-content li:last-child {
+            margin-bottom: 0;
+        }
+
+        .step-content strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        /* Evidence Checklist Styles */
+        .evidence-checklist {
+            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+            padding: 20px;
+            border-radius: var(--radius);
+            margin-bottom: 20px;
+            border: 1px solid #fde68a;
+        }
+
+        .evidence-checklist-title {
+            color: #92400e;
+            margin-bottom: 16px;
+            font-size: 18px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .evidence-content {
+            background: white;
+            border-radius: var(--radius);
+            border: 1px solid #fde68a;
+            overflow: hidden;
+        }
+
+        .evidence-intro {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            padding: 12px 16px;
+            border-bottom: 1px solid #fde68a;
+        }
+
+        .evidence-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #92400e;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .evidence-badge::before {
+            content: '⚠️';
+            font-size: 16px;
+        }
+
+        .evidence-body {
+            padding: 16px;
+            color: var(--text-primary);
+            line-height: 1.7;
+            font-size: 13px;
+        }
+
+        .evidence-body h1,
+        .evidence-body h2,
+        .evidence-body h3,
+        .evidence-body h4 {
+            color: #92400e;
+            font-weight: 700;
+            margin-top: 16px;
+            margin-bottom: 10px;
+        }
+
+        .evidence-body h1 {
+            font-size: 17px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #fde68a;
+        }
+
+        .evidence-body h2 {
+            font-size: 16px;
+        }
+
+        .evidence-body h3 {
+            font-size: 15px;
+        }
+
+        .evidence-body h4 {
+            font-size: 14px;
+            color: #b45309;
+        }
+
+        .evidence-body ul {
+            margin: 12px 0;
+            padding-left: 0;
+            list-style: none;
+        }
+
+        .evidence-body ul li {
+            position: relative;
+            padding-left: 24px;
+            margin-bottom: 10px;
+            line-height: 1.7;
+        }
+
+        .evidence-body ul li::before {
+            content: '▸';
+            position: absolute;
+            left: 8px;
+            color: #f59e0b;
+            font-weight: 700;
+        }
+
+        .evidence-body ul li strong {
+            color: #92400e;
+            font-weight: 700;
+        }
+
+        .evidence-body p {
+            margin-bottom: 10px;
+        }
+
+        .evidence-body p:last-child {
+            margin-bottom: 0;
+        }
+
+        .evidence-body strong {
+            color: #92400e;
+            font-weight: 600;
+        }
+
+        .evidence-body em {
+            color: #b45309;
+            font-style: italic;
+        }
+
+        .evidence-body code {
+            background: #fef3c7;
+            color: #92400e;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 12px;
+            border: 1px solid #fde68a;
+        }
+
+        .evidence-body blockquote {
+            border-left: 3px solid #f59e0b;
+            background: #fffbeb;
+            padding: 12px 16px;
+            margin: 12px 0;
+            border-radius: 4px;
+            color: #78350f;
+            font-style: italic;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 32px 20px;
+            color: var(--text-muted);
+            font-size: 14px;
+            background: var(--bg-secondary);
+            border-radius: var(--radius);
+            border: 2px dashed var(--border);
+        }
+
+        .priority-badge {
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .priority-critical {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .priority-high {
+            background: #ffedd5;
+            color: #9a3412;
+        }
+
+        .priority-normal {
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .container {
+                box-shadow: none;
+                padding: 20px;
+            }
+
+            .back-button {
+                display: none;
+            }
+
+            .section-item {
+                page-break-inside: avoid;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 12px;
+            }
+
+            .container {
+                padding: 16px;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .header-meta {
+                align-items: flex-start;
+                width: 100%;
+            }
+
+            .file-name {
+                max-width: 100%;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .section-title {
+                font-size: 14px;
+                padding: 10px 12px;
+            }
+
+            .investigation-plan {
+                padding: 16px;
+            }
+
+            .investigation-plan-title {
+                font-size: 16px;
+            }
+
+            .step-header {
+                padding: 12px;
+            }
+
+            .step-number {
+                width: 28px;
+                height: 28px;
+                font-size: 13px;
+            }
+
+            .step-title {
+                font-size: 14px;
+            }
+
+            .step-content {
+                padding: 12px;
+                font-size: 12px;
+            }
+
+            .evidence-checklist {
+                padding: 16px;
+            }
+
+            .evidence-checklist-title {
+                font-size: 16px;
+            }
+
+            .evidence-intro {
+                padding: 10px 12px;
+            }
+
+            .evidence-badge {
+                font-size: 12px;
+            }
+
+            .evidence-body {
+                padding: 12px;
+                font-size: 12px;
+            }
+
+            .evidence-body h1 {
+                font-size: 16px;
+            }
+
+            .evidence-body h2 {
+                font-size: 15px;
+            }
+
+            .evidence-body h3 {
+                font-size: 14px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+
+            .stat-number {
+                font-size: 24px;
+            }
+        }
+
+        /* Tab Navigation Styles */
+        .tab-navigation {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 24px;
+            padding: 16px;
+            background: var(--bg-secondary);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+        }
+
+        .tab-button {
+            flex: 1;
+            min-width: 140px;
+            padding: 12px 20px;
+            background: white;
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tab-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 0;
+        }
+
+        .tab-button span {
+            position: relative;
+            z-index: 1;
+        }
+
+        .tab-button:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .tab-button.active {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            border-color: var(--primary-dark);
+            box-shadow: var(--shadow-md);
+        }
+
+        .tab-button.active::before {
+            opacity: 1;
+        }
+
+        .tab-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 20px;
+            height: 20px;
+            padding: 0 6px;
+            background: var(--primary-light);
+            color: var(--primary);
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .tab-button.active .tab-badge {
+            background: rgba(255, 255, 255, 0.3);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeInTab 0.4s ease-in-out;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeInTab {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .tab-navigation {
+                padding: 12px;
+                gap: 6px;
+            }
+
+            .tab-button {
+                min-width: 100px;
+                padding: 10px 14px;
+                font-size: 12px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .tab-button {
+                flex: 1 1 calc(50% - 6px);
+                min-width: auto;
+            }
+        }
+
+        /* Historical Cases Styles */
+        .historical-cases-section {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            padding: 20px;
+            border-radius: var(--radius);
+            margin-bottom: 20px;
+            border: 1px solid #bae6fd;
+        }
+
+        .historical-cases-title {
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            font-size: 18px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .historical-cases-grid {
+            display: grid;
+            gap: 16px;
+        }
+
+        .historical-case-card {
+            background: white;
+            border-radius: var(--radius);
+            border: 1px solid #bae6fd;
+            border-left: 4px solid var(--primary);
+            padding: 18px;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .historical-case-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+            border-left-color: var(--primary-dark);
+        }
+
+        .case-header {
+            margin-bottom: 12px;
+        }
+
+        .case-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        .case-summary {
+            color: var(--text-primary);
+            line-height: 1.7;
+            font-size: 13px;
+            margin-bottom: 12px;
+            padding: 12px;
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            border: 1px solid var(--border);
+        }
+
+        .case-url {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+
+        .case-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--primary);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .case-link:hover {
+            color: var(--primary-dark);
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .historical-cases-section {
+                padding: 16px;
+            }
+
+            .historical-cases-title {
+                font-size: 16px;
+            }
+
+            .historical-case-card {
+                padding: 14px;
+            }
+
+            .case-title {
+                font-size: 15px;
+            }
+
+            .case-summary {
+                font-size: 12px;
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <a href="/" class="back-button" aria-label="Upload new FIR">← Upload New FIR</a>
+
+        <div class="header">
+            <div class="header-content">
+                <h1>Legal Analysis Results</h1>
+            </div>
+            <div class="header-meta">
+                {% if state.pdf_filename %}
+                <div class="file-name" title="{{ state.pdf_filename }}">📄 {{ state.pdf_filename }}</div>
+                {% endif %}
+                <div class="workflow-id" title="{{ state.workflow_id }}">ID: {{ (state.workflow_id or '')[:8] }}...
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number">{{ state.stats.ndps_count }}</div>
+                <div class="stat-label">NDPS</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ state.stats.bns_count }}</div>
+                <div class="stat-label">BNS</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ state.stats.bnss_count }}</div>
+                <div class="stat-label">BNSS</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ state.stats.bsa_count }}</div>
+                <div class="stat-label">BSA</div>
+            </div>
+            {% if state.stats.next_steps_count > 0 %}
+            <div class="stat-card">
+                <div class="stat-number">{{ state.stats.next_steps_count }}</div>
+                <div class="stat-label">Next Steps</div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+            {% if state.fir_facts %}
+            <button class="tab-button active" onclick="switchTab('fir-facts')">
+                <span>📄 FIR Facts</span>
+            </button>
+            {% endif %}
+            {% if state.ndps_sections %}
+            <button class="tab-button {% if not state.fir_facts %}active{% endif %}"
+                onclick="switchTab('ndps-sections')">
+                <span>⚖️ NDPS Act</span>
+                <span class="tab-badge">{{ state.ndps_sections|length }}</span>
+            </button>
+            {% endif %}
+            {% if state.bns_sections %}
+            <button class="tab-button {% if not state.fir_facts and not state.ndps_sections %}active{% endif %}"
+                onclick="switchTab('bns-sections')">
+                <span>📜 BNS</span>
+                <span class="tab-badge">{{ state.bns_sections|length }}</span>
+            </button>
+            {% endif %}
+            {% if state.bnss_sections %}
+            <button
+                class="tab-button {% if not state.fir_facts and not state.ndps_sections and not state.bns_sections %}active{% endif %}"
+                onclick="switchTab('bnss-sections')">
+                <span>🔒 BNSS</span>
+                <span class="tab-badge">{{ state.bnss_sections|length }}</span>
+            </button>
+            {% endif %}
+            {% if state.bsa_sections %}
+            <button
+                class="tab-button {% if not state.fir_facts and not state.ndps_sections and not state.bns_sections and not state.bnss_sections %}active{% endif %}"
+                onclick="switchTab('bsa-sections')">
+                <span>📋 BSA</span>
+                <span class="tab-badge">{{ state.bsa_sections|length }}</span>
+            </button>
+            {% endif %}
+
+            {% if state.investigation_plan %}
+            <button
+                class="tab-button {% if not state.fir_facts and not state.ndps_sections and not state.bns_sections and not state.bnss_sections and not state.bsa_sections %}active{% endif %}"
+                onclick="switchTab('investigation-plan')">
+                <span>📋 Investigation Plan</span>
+                <span class="tab-badge">{{ state.investigation_plan|length }}</span>
+            </button>
+            {% endif %}
+            {% if state.investigation_and_legal_timeline %}
+            <button
+                class="tab-button {% if not state.fir_facts and not state.ndps_sections and not state.bns_sections and not state.bnss_sections and not state.bsa_sections and not state.investigation_plan %}active{% endif %}"
+                onclick="switchTab('investigation-timeline')">
+                <span>📅 Investigation & Legal Timeline</span>
+            </button>
+            {% endif %}
+            {% if state.evidence_checklist %}
+            <button
+                class="tab-button {% if not state.fir_facts and not state.ndps_sections and not state.bns_sections and not state.bnss_sections and not state.bsa_sections and not state.investigation_plan %}active{% endif %}"
+                onclick="switchTab('evidence-checklist')">
+                <span>📦 Evidence Checklist</span>
+            </button>
+            {% endif %}
+            {% if state.dos and state.donts %}
+            <button class="tab-button" onclick="switchTab('dos-donts')">
+                <span>✓✗ Do's & Don'ts</span>
+                <span class="tab-badge">{{ (state.dos|length) + (state.donts|length) }}</span>
+            </button>
+            {% endif %}
+            {% if state.potential_prosecution_weaknesses %}
+            <button class="tab-button" onclick="switchTab('prosecution-weaknesses')">
+                <span>⚠️ Prosecution Weaknesses</span>
+                <span class="tab-badge">{{ state.potential_prosecution_weaknesses|length }}</span>
+            </button>
+            {% endif %}
+            {% if state.next_steps %}
+            <button class="tab-button" onclick="switchTab('next-steps')">
+                <span>✅ Recommendations</span>
+                <span class="tab-badge">{{ state.next_steps|length }}</span>
+            </button>
+            {% endif %}
+            {% if state.historical_cases %}
+            <button class="tab-button" onclick="switchTab('historical-cases')">
+                <span>📚 Historical Cases</span>
+                <span class="tab-badge">{{ state.historical_cases|length }}</span>
+            </button>
+            {% endif %}
+        </div>
+
+        <!-- Tab Contents -->
+        {% if state.fir_facts %}
+        <div id="fir-facts" class="tab-content active">
+            <div class="fir-facts">
+                <h2>FIR Facts Summary</h2>
+                {% for key, value in state.fir_facts.items() %}
+                <div class="fir-fact-item">
+                    <div class="fir-fact-label">{{ key.replace('_', ' ').title() }}</div>
+                    <div class="fir-fact-value markdown-content" data-markdown>{{ value }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if state.investigation_plan %}
+        <div id="investigation-plan"
+            class="tab-content {% if not state.fir_facts and not state.ndps_sections and not state.bns_sections and not state.bnss_sections and not state.bsa_sections %}active{% endif %}">
+            <div class="investigation-plan">
+                <h2 class="investigation-plan-title">📋 Detailed Investigation Plan</h2>
+                <div class="investigation-plan-grid">
+                    {% for point in state.investigation_plan %}
+                    <div class="investigation-step">
+                        <div class="step-header">
+                            <span class="step-number">{{ loop.index }}</span>
+                            <div class="step-title-wrapper">
+                                <h3 class="step-title">{{ point.title }}</h3>
+                                {% if point.date_range %}
+                                <span class="step-date">{{ point.date_range }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="step-content markdown-content" data-markdown>{{ point.description }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if state.investigation_and_legal_timeline %}
+        <div id="investigation-timeline"
+            class="tab-content {% if not state.fir_facts and not state.ndps_sections and not state.bns_sections and not state.bnss_sections and not state.bsa_sections and not state.investigation_plan %}active{% endif %}">
+            <div class="investigation-plan">
+                <h2 class="investigation-plan-title">📅 Investigation & Legal Timeline</h2>
+                {% if state.investigation_and_legal_timeline.date_string %}
+                <div style="background: white; padding: 16px; border-radius: var(--radius); margin-bottom: 16px; border: 1px solid #bae6fd; border-left: 4px solid var(--primary);">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                        <span style="font-size: 18px;">📆</span>
+                        <span style="font-size: 14px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">Date</span>
+                    </div>
+                    <div style="font-size: 16px; font-weight: 600; color: var(--primary);">
+                        {{ state.investigation_and_legal_timeline.date_string }}
+                    </div>
+                </div>
+                {% endif %}
+                <div style="background: white; padding: 20px; border-radius: var(--radius); border: 1px solid #bae6fd;">
+                    <div class="field-value markdown-content" data-markdown>{{ state.investigation_and_legal_timeline.timeline }}</div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if state.evidence_checklist %}
+        <div id="evidence-checklist"
+            class="tab-content {% if not state.fir_facts and not state.ndps_sections and not state.bns_sections and not state.bnss_sections and not state.bsa_sections and not state.investigation_plan %}active{% endif %}">
+            <div class="evidence-checklist">
+                <h2 class="evidence-checklist-title">📦 Evidence Checklist & Compliance</h2>
+                <div class="evidence-content">
+                    <div class="evidence-intro">
+                        <span class="evidence-badge">Critical Items & Admissibility Requirements</span>
+                    </div>
+                    <div class="evidence-body markdown-content" data-markdown>{{ state.evidence_checklist }}</div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if state.ndps_sections %}
+        <div id="ndps-sections" class="tab-content {% if not state.fir_facts %}active{% endif %}">
+            <div class="section-group">
+                <h2 class="section-title">NDPS Act</h2>
+                {% for section in state.ndps_sections %}
+                <div class="section-item">
+                    <div class="section-number">Section {{ section.section_number }}</div>
+                    <div class="section-content">
+                        <div class="section-field">
+                            <span class="field-label">Description</span>
+                            <div class="field-value markdown-content" data-markdown>{{ section.section_description }}
+                            </div>
+                        </div>
+                        <div class="section-field">
+                            <span class="field-label">Relevance</span>
+                            <div class="field-value markdown-content" data-markdown>{{ section.why_section_is_relevant
+                                }}
+                            </div>
+                        </div>
+                        {% if section.source %}
+                        <div class="source">
+                            {% if section.source.startswith('http') %}
+                            <a href="{{ section.source }}" target="_blank" rel="noopener noreferrer">{{ section.source
+                                }}</a>
+                            {% else %}
+                            {{ section.source }}
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if state.bns_sections %}
+        <div id="bns-sections"
+            class="tab-content {% if not state.fir_facts and not state.ndps_sections %}active{% endif %}">
+            <div class="section-group">
+                <h2 class="section-title">Bharatiya Nyaya Sanhita (BNS)</h2>
+                {% for section in state.bns_sections %}
+                <div class="section-item">
+                    <div class="section-number">Section {{ section.section_number }}</div>
+                    <div class="section-content">
+                        <div class="section-field">
+                            <span class="field-label">Description</span>
+                            <div class="field-value markdown-content" data-markdown>{{ section.section_description }}
+                            </div>
+                        </div>
+                        <div class="section-field">
+                            <span class="field-label">Relevance</span>
+                            <div class="field-value markdown-content" data-markdown>{{ section.why_section_is_relevant
+                                }}
+                            </div>
+                        </div>
+                        {% if section.source %}
+                        <div class="source">
+                            {% if section.source.startswith('http') %}
+                            <a href="{{ section.source }}" target="_blank" rel="noopener noreferrer">{{ section.source
+                                }}</a>
+                            {% else %}
+                            {{ section.source }}
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if state.bnss_sections %}
+        <div id="bnss-sections"
+            class="tab-content {% if not state.fir_facts and not state.ndps_sections and not state.bns_sections %}active{% endif %}">
+            <div class="section-group">
+                <h2 class="section-title">Bharatiya Nagarik Suraksha Sanhita (BNSS)</h2>
+                {% for section in state.bnss_sections %}
+                <div class="section-item">
+                    <div class="section-number">Section {{ section.section_number }}</div>
+                    <div class="section-content">
+                        <div class="section-field">
+                            <span class="field-label">Description</span>
+                            <div class="field-value markdown-content" data-markdown>{{ section.section_description }}
+                            </div>
+                        </div>
+                        <div class="section-field">
+                            <span class="field-label">Relevance</span>
+                            <div class="field-value markdown-content" data-markdown>{{ section.why_section_is_relevant
+                                }}
+                            </div>
+                        </div>
+                        {% if section.source %}
+                        <div class="source">
+                            {% if section.source.startswith('http') %}
+                            <a href="{{ section.source }}" target="_blank" rel="noopener noreferrer">{{ section.source
+                                }}</a>
+                            {% else %}
+                            {{ section.source }}
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if state.bsa_sections %}
+        <div id="bsa-sections"
+            class="tab-content {% if not state.fir_facts and not state.ndps_sections and not state.bns_sections and not state.bnss_sections %}active{% endif %}">
+            <div class="section-group">
+                <h2 class="section-title">Bharatiya Sakshya Adhiniyam (BSA)</h2>
+                {% for section in state.bsa_sections %}
+                <div class="section-item">
+                    <div class="section-number">Section {{ section.section_number }}</div>
+                    <div class="section-content">
+                        <div class="section-field">
+                            <span class="field-label">Description</span>
+                            <div class="field-value markdown-content" data-markdown>{{ section.section_description }}
+                            </div>
+                        </div>
+                        <div class="section-field">
+                            <span class="field-label">Relevance</span>
+                            <div class="field-value markdown-content" data-markdown>{{ section.why_section_is_relevant
+                                }}
+                            </div>
+                        </div>
+                        {% if section.source %}
+                        <div class="source">
+                            {% if section.source.startswith('http') %}
+                            <a href="{{ section.source }}" target="_blank" rel="noopener noreferrer">{{ section.source
+                                }}</a>
+                            {% else %}
+                            {{ section.source }}
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if state.dos and state.donts %}
+        <div id="dos-donts" class="tab-content">
+            <div class="dos-donts-container">
+                <h2 class="dos-donts-title">✓✗ Do's & Don'ts for Law Enforcement</h2>
+                <div class="dos-donts-grid">
+                    <div class="dos-section">
+                        <h3>Do's</h3>
+                        <ul class="dos-list">
+                            {% for do in state.dos %}
+                            <li>{{ do }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <div class="donts-section">
+                        <h3>Don'ts</h3>
+                        <ul class="donts-list">
+                            {% for dont in state.donts %}
+                            <li>{{ dont }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if state.potential_prosecution_weaknesses %}
+        <div id="prosecution-weaknesses" class="tab-content">
+            <div class="prosecution-weaknesses">
+                <h2 class="prosecution-weaknesses-title">Potential Prosecution Weaknesses</h2>
+                {% for heading, details in state.potential_prosecution_weaknesses.items() %}
+                <div class="weakness-item">
+                    <div class="weakness-heading">{{ heading }}</div>
+                    <div class="weakness-details">{{ details }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if state.next_steps %}
+        <div id="next-steps" class="tab-content">
+            <div class="next-steps">
+                <h2>Other Recommendations</h2>
+                <ul class="next-steps-list">
+                    {% for step in state.next_steps %}
+                    <li>
+                        <div class="next-steps-item-content markdown-content" data-markdown>{{ step }}</div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if state.historical_cases %}
+        <div id="historical-cases" class="tab-content">
+            <div class="historical-cases-section">
+                <h2 class="historical-cases-title">📚 Historical Cases</h2>
+                <div class="historical-cases-grid">
+                    {% for case in state.historical_cases %}
+                    <div class="historical-case-card">
+                        <div class="case-header">
+                            <h3 class="case-title">{{ case.title }}</h3>
+                        </div>
+                        <div class="case-summary markdown-content" data-markdown>{{ case.summary }}</div>
+                        {% if case.url %}
+                        <div class="case-url">
+                            <a href="{{ case.url }}" target="_blank" rel="noopener noreferrer" class="case-link">
+                                🔗 View Source
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if not state.ndps_sections and not state.bns_sections and not state.bnss_sections and not state.bsa_sections
+        and not state.next_steps %}
+        <div class="empty-state">
+            <p>No sections were mapped for this FIR.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        marked.setOptions({
+            breaks: true,
+            gfm: true,
+            headerIds: false,
+            mangle: false
+        });
+
+        document.querySelectorAll('[data-markdown]').forEach(element => {
+            const markdown = element.textContent.trim();
+            if (markdown) {
+                try {
+                    element.innerHTML = marked.parse(markdown);
+                } catch (error) {
+                    console.error('Error rendering markdown:', error);
+                    element.textContent = markdown;
+                }
+            }
+        });
+
+        // Tab switching functionality
+        function switchTab(tabId) {
+            // Remove active class from all tabs and buttons
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+
+            // Add active class to selected tab and button
+            const selectedTab = document.getElementById(tabId);
+            if (selectedTab) {
+                selectedTab.classList.add('active');
+            }
+
+            // Find and activate the corresponding button
+            const selectedButton = document.querySelector(`button[onclick="switchTab('${tabId}')"]`);
+            if (selectedButton) {
+                selectedButton.classList.add('active');
+            }
+
+            // Scroll to top of content
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+</body>
+
+</html>
