@@ -49,11 +49,20 @@ def extract_fir_fact(state: WorkflowState) -> dict:
         ValueError: If pdf_content_in_english is missing
         Exception: If extraction fails
     """
+    import logging
+    import sys
+    logger = logging.getLogger(__name__)
+    logger.info("🔍 [extract_fir_fact] Starting FIR fact extraction...")
+    sys.stdout.flush()  # Force flush to see logs immediately
     
     if not state.get("pdf_content_in_english"):
+        logger.error("❌ [extract_fir_fact] pdf_content_in_english is missing")
+        sys.stdout.flush()
         raise ValueError("pdf_content_in_english is required for FIR fact extraction")
     
     pdf_content = state["pdf_content_in_english"]
+    logger.debug(f"📄 [extract_fir_fact] Processing FIR content ({len(pdf_content)} characters)")
+    sys.stdout.flush()
 
     try:
         prompt = f"""Extract the following information from the FIR text. 

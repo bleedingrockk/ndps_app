@@ -19,30 +19,10 @@ __pycache__/
 *$py.class
 *.so
 .Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
 
 # Virtual Environment
 local_env/
-venv/
-ENV/
-env/
-.venv
+
 
 # IDEs
 .vscode/
@@ -94,9 +74,7 @@ cython_debug/
 !tsconfig*.json
 backend/app/secret/*.json
 
-# But allow metadata JSON files
-!**/faiss_metadata.json
-!**/chunks/**/*.json
+
 
 # Logs
 *.log
@@ -114,10 +92,6 @@ Thumbs.db
 
 # FastAPI
 .pytest_cache/
-
-# Static files (if generated)
-/static/*
-!/static/.gitkeep
 
 # Database files
 *.db

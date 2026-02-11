@@ -4,6 +4,7 @@ Main entry point for FIR Legal Analysis API application.
 
 import sys
 import io
+import logging
 import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
@@ -11,8 +12,33 @@ from fastapi.responses import FileResponse
 from starlette.middleware.sessions import SessionMiddleware
 from pathlib import Path
 
-# Fix Windows console encoding
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+# Fix Windows console encoding and set unbuffered mode
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace', line_buffering=True)
+
+# Configure logging to be unbuffered and show real-time logs
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S',
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ],
+    force=True  # Override any existing configuration
+)
+
+# Make sure the handler flushes immediately
+for handler in logging.root.handlers:
+    handler.setLevel(logging.INFO)
+    # Force unbuffered output - flush after each write
+    if hasattr(handler, 'stream'):
+        try:
+            handler.stream.reconfigure(line_buffering=True)
+        except (AttributeError, ValueError):
+            pass  # Some streams don't support reconfigure
+
+# Set logging to flush immediately
+logging.root.setLevel(logging.INFO)
 
 from app.routes import api_router
 from app.routes.config import STATIC_DIR
