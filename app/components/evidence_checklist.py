@@ -101,6 +101,13 @@ Forensic Guidelines Retrieved:
 
 Task: Create a COMPREHENSIVE EVIDENCE CHECKLIST with critical items and admissibility requirements.
 
+USE HISTORICAL CASES AND PRECEDENTS: Reference relevant case law, Supreme Court judgments, and High Court decisions from your knowledge that illustrate:
+- Evidence admissibility requirements and standards
+- Cases where evidence was rejected due to procedural lapses
+- Successful prosecution strategies based on proper evidence handling
+- Legal precedents on chain of custody, sealing, sampling, and witness requirements
+- Case law that clarifies what makes evidence admissible or inadmissible in NDPS cases
+
 Output Format (EXACT):
 4. Evidence Checklist (Critical Items & Admissibility)
  - Evidence Name: Description of the evidence, its importance, chain of custody requirements, admissibility formalities, and legal compliance. Include specific details from FIR (exhibit numbers, dates, witness names, locations, quantities, times). Mention what could go wrong.
@@ -132,6 +139,12 @@ REQUIREMENTS:
 - Reference concrete FIR details (not generic placeholders)
 - Cover 10-15 evidence items comprehensively
 - Use actual names, numbers, and specifics from the FIR wherever available
+- INCORPORATE CASE LAW: Where relevant, cite historical cases that illustrate:
+  * Evidence admissibility standards (e.g., "As held in [Case Name], the panchnama must...")
+  * Cases where evidence was rejected (e.g., "In [Case Name], the court rejected evidence because...")
+  * Successful prosecution precedents (e.g., "Following [Case Name], ensure that...")
+  * Legal requirements established by courts (e.g., "The Supreme Court in [Case Name] held that...")
+- Use case citations to strengthen the importance and admissibility requirements of each evidence item
 
 End with:
 (Legal importance: Each piece ties the accused to possession for sale. NDPS requires physical possession + intent to traffic. The combination of large quantity, travel documents, cash, and confession strongly establishes intent. Proper packaging and sealing with video/photos under e-Sakshya provides chain-of-custody.)

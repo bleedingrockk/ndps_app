@@ -124,7 +124,7 @@ Analyse the FIR text below and generate a professional, chronological, court-rea
 The plan must be realistic, procedural, and compliant with:
 - NDPS Act
 - CrPC
-- Juvenile Justice Act (if minor involved)
+- Juvenile Justice Act (ONLY if minor is mentioned in the FIR)
 
 Do NOT ask questions.
 Do NOT request extra information.
@@ -132,10 +132,15 @@ Work only with the FIR content and generate a legally sound investigation roadma
 
 If any fact is missing from FIR, write the step as "to be verified" or "to be completed".
 
-The output must always follow this structure:
+IMPORTANT: 
+- ONLY include "Child Welfare & Juvenile Safeguards" section if the FIR explicitly mentions a minor/juvenile accused
+- ONLY mention women officers or female-specific procedures if the FIR involves a female accused or female-specific search requirements
+- Do NOT include generic sections about children or women if not relevant to this specific case
+
+The output must follow this structure (adjust based on case relevance):
 
 1. Immediate Actions (Day 0–1)
-2. Child Welfare & Juvenile Safeguards (only if minor)
+2. Child Welfare & Juvenile Safeguards (ONLY if minor involved - check FIR for age/status)
 3. Documentation & Procedural Compliance
 4. Forensic & Sampling Process
 5. Witness Examination
@@ -144,6 +149,8 @@ The output must always follow this structure:
 8. Bail & Custody Considerations
 9. Charge-sheet Preparation
 10. Timeline Summary
+
+If no minor is involved, skip section 2 entirely. If no female accused, do not mention women officers or female-specific procedures.
 
 Style:
 - Formal Indian legal English

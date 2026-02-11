@@ -54,6 +54,7 @@ CRITICAL REQUIREMENTS:
 3. Reference specific legal sections where applicable
 4. Include procedural requirements specific to the facts of this case
 5. Mention specific evidence items, witnesses, and procedures from the FIR
+6. USE HISTORICAL CASES AND PRECEDENTS: Reference relevant case law, Supreme Court judgments, and High Court decisions from your knowledge that illustrate similar procedural requirements, common pitfalls, or successful prosecution strategies. Cite case names and key legal principles when relevant to strengthen the dos/donts.
 
 ========================
 OFFICIAL NDPS PROCEDURAL GUIDELINES
@@ -190,16 +191,17 @@ GENERATION RULES:
 - Reference specific locations: railway stations, platforms, addresses from FIR
 - Reference specific quantities and exhibit numbers from FIR
 - Reference specific legal sections that apply to this case
-- For juveniles: mention specific safeguards for the named minor accused
-- For women: mention specific protections if applicable
-- For Section 50 compliance: mention specific requirements for this search/seizure, including individual communication to each accused
-- For sampling: mention specific requirements for the substances seized in this case, including Magistrate presence under Section 52A
-- For FSL: mention specific dispatch requirements for this case's samples (within 72 hours)
-- For pre-raid procedures: reference specific departure entries, raiding party composition, equipment carried
-- For search procedures: reference specific authorization requirements, witness joining, sealing procedures
-- For FIR preparation: reference specific time notations, witness details, compliance documentation required
-- For investigation: reference specific statement recording, arrest memo, superior officer reporting (Section 57 - 48 hours)
-- For financial investigation: reference forfeiture procedures if applicable to this case
+- USE HISTORICAL CASES: When relevant, cite case law examples (e.g., "As held in State of Rajasthan v/s Parmanand, each accused must be individually informed...", "Following the precedent in [case name], ensure...", "To avoid the pitfalls seen in [case name], make sure...")
+- For juveniles: mention specific safeguards for the named minor accused, referencing relevant case law if applicable
+- For women: mention specific protections if applicable, citing relevant precedents
+- For Section 50 compliance: mention specific requirements for this search/seizure, including individual communication to each accused (cite State of Rajasthan v/s Parmanand or similar cases)
+- For sampling: mention specific requirements for the substances seized in this case, including Magistrate presence under Section 52A, referencing cases where sampling defects led to acquittals
+- For FSL: mention specific dispatch requirements for this case's samples (within 72 hours), citing cases where delayed dispatch or improper handling led to evidence rejection
+- For pre-raid procedures: reference specific departure entries, raiding party composition, equipment carried, citing cases where procedural lapses affected prosecution
+- For search procedures: reference specific authorization requirements, witness joining, sealing procedures, using case law examples where these were critical
+- For FIR preparation: reference specific time notations, witness details, compliance documentation required, citing precedents on FIR admissibility
+- For investigation: reference specific statement recording, arrest memo, superior officer reporting (Section 57 - 48 hours), using case examples where these were scrutinized
+- For financial investigation: reference forfeiture procedures if applicable to this case, citing relevant precedents
 
 EXAMPLES OF GOOD DOS (case-specific):
 ✓ "Ensure that the consent for search under Section 50 NDPS Act obtained from Anuj S/o Chintamani Yadav on 19-Sep-2025 is properly documented in writing with his signature, indicating he understood his right to be searched before a Gazetted Officer or Magistrate"
@@ -222,7 +224,21 @@ EXAMPLES OF GOOD DON'TS (case-specific):
 ✓ "Do not fail to mention in the FIR complaint/endorsement the specific times for: DD entry, raiding party constitution, departure from police station, arrival at spot, briefing time, nakabandi time, and time of apprehending suspect Anuj"
 ✓ "Do not send samples to FSL without ensuring all infirmities are removed, as returned samples with objections are fatal for prosecution case"
 
-Generate 8-10 specific dos and 8-10 specific donts that are directly tied to THIS case's facts, evidence, accused, witnesses, dates, locations, and legal requirements."""
+Generate 8-10 specific dos and 8-10 specific donts that are directly tied to THIS case's facts, evidence, accused, witnesses, dates, locations, and legal requirements.
+
+IMPORTANT: Wherever relevant, strengthen your dos/donts by referencing historical NDPS cases, Supreme Court judgments, or High Court decisions from your knowledge that illustrate:
+- Successful prosecution strategies that should be followed
+- Common procedural pitfalls that led to acquittals (to avoid)
+- Legal precedents that establish mandatory requirements
+- Case law that clarifies procedural compliance standards
+
+Examples of incorporating case law:
+- "As established in [Case Name], ensure individual Section 50 notice to each accused..."
+- "Following the precedent in [Case Name], verify that..."
+- "To avoid the acquittal scenario in [Case Name], make certain that..."
+- "As held by the Supreme Court in [Case Name], it is mandatory to..."
+
+This will make the dos/donts more authoritative and legally grounded."""
     
     # Generate dos and donts with structured output
     @exponential_backoff_retry(max_retries=5, max_wait=60)

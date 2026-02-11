@@ -3,7 +3,6 @@ from langgraph.checkpoint.memory import MemorySaver
 
 from app.langgraph.state import WorkflowState
 from app.utils.read_pdf import read_pdf
-from app.translator import translate_to_english
 
 from app.components.fir_fact_extraction import extract_fir_fact
 from app.components.ndps_legal_mapping import ndps_legal_mapping
@@ -62,7 +61,6 @@ workflow_graph = StateGraph(WorkflowState)
 
 # Add all nodes
 workflow_graph.add_node("read_pdf", read_pdf)
-workflow_graph.add_node("translate_to_english", translate_to_english)
 workflow_graph.add_node("extract_fir_fact", extract_fir_fact)
 workflow_graph.add_node("ndps_legal_mapping", ndps_legal_mapping)
 workflow_graph.add_node("bns_legal_mapping", bns_legal_mapping)
@@ -80,8 +78,8 @@ workflow_graph.add_node("generate_chargesheet", generate_chargesheet)
 
 # Permanent sequential path
 workflow_graph.add_edge(START, "read_pdf")
-workflow_graph.add_edge("read_pdf", "translate_to_english")
-workflow_graph.add_edge("translate_to_english", "extract_fir_fact")
+workflow_graph.add_edge("read_pdf", "extract_fir_fact")
+# workflow_graph.add_edge("translate_to_english", "extract_fir_fact")
 
 # Route to ALL selected sections at once - they ALL run in PARALLEL
 workflow_graph.add_conditional_edges(

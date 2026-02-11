@@ -3,7 +3,8 @@ import fitz  # pip install pymupdf
 
 def read_pdf(state: dict) -> dict:
     """
-    Read PDF from state (pdf_bytes or pdf_path) and return {"pdf_content": text}.
+    Read PDF from state (pdf_bytes or pdf_path) and return {"pdf_content_in_english": text}.
+    Assumes PDF is already in English - no translation needed.
     No files are written to disk.
     """
     print("Reading PDF...")
@@ -21,4 +22,5 @@ def read_pdf(state: dict) -> dict:
     doc.close()
     final_text = "\n".join(text)
     print("PDF read successfully.")
-    return {"pdf_content": final_text}
+    # Return as pdf_content_in_english since PDF is already in English
+    return {"pdf_content_in_english": final_text}

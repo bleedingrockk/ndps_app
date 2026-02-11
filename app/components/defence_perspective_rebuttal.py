@@ -50,9 +50,15 @@ You MUST strictly follow these rules:
    - quantity and nature of contraband
    - seal numbers, exhibit numbers
    - sections of NDPS Act
-5. Structure the output exactly as per the schema:
-   - defence_perspective: list of defence arguments
-   - rebuttal: list of prosecution counter-arguments
+5. USE HISTORICAL CASES AND PRECEDENTS: Reference relevant case law, Supreme Court judgments, and High Court decisions from your knowledge that illustrate:
+   - Successful defence arguments that led to acquittals (for defence perspective)
+   - Prosecution strategies that successfully countered defence arguments (for rebuttal)
+   - Legal precedents that establish procedural requirements or evidentiary standards
+   - Case law that clarifies what constitutes valid compliance or non-compliance
+   - Examples of cases where similar facts resulted in conviction or acquittal
+6. Structure the output exactly as per the schema:
+   - defence_perspective: list of defence arguments (cite relevant case law where applicable)
+   - rebuttal: list of prosecution counter-arguments (cite relevant case law where applicable)
 
 ### You must consider and intelligently apply ALL the following recognised REASONS OF ACQUITTAL IN NDPS ACT CASES while generating defence and rebuttal:
 
@@ -117,14 +123,19 @@ L. **Witnesses not properly briefed**
    - Vague or inconsistent testimony
 
 ### Output expectations:
-- Defence Perspective: Argue how the above lapses create doubt and favour acquittal.
-- Rebuttal: Show how prosecution can neutralise the defence using FIR facts, legal presumptions (Sections 35, 54 NDPS Act), explanations, and case-law-consistent reasoning.
+- Defence Perspective: Argue how the above lapses create doubt and favour acquittal. Reference historical cases where similar procedural lapses led to acquittals (e.g., "As seen in [Case Name], failure to comply with Section 50 resulted in acquittal...", "Following the precedent in [Case Name], the defence can argue that...")
+- Rebuttal: Show how prosecution can neutralise the defence using FIR facts, legal presumptions (Sections 35, 54 NDPS Act), explanations, and case-law-consistent reasoning. Cite cases where prosecution successfully countered similar defence arguments (e.g., "As held in [Case Name], the prosecution can establish...", "The Supreme Court in [Case Name] clarified that...", "Following [Case Name], the prosecution can argue that...")
+
+### Incorporating Case Law:
+- For Defence Perspective: Cite cases where similar procedural defects, non-compliance, or evidentiary gaps led to acquittals. Examples: State of Rajasthan v/s Parmanand (Section 50 individual notice), cases on sealing defects, sampling delays, witness non-joining, etc.
+- For Rebuttal: Cite cases where prosecution successfully overcame similar challenges, established compliance, or where courts upheld convictions despite defence arguments. Examples: cases upholding convictions based on proper compliance, cases clarifying procedural requirements, cases establishing legal presumptions.
 
 ### Tone:
 - Formal legal language
 - Court-ready
 - Practical and realistic
 - No speculation beyond FIR
+- Authoritative with case law citations where relevant
 
 ### FIR CONTENT:
 {pdf_content}
