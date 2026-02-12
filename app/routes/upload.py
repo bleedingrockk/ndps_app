@@ -63,22 +63,53 @@ def process_workflow_background(
             graph_state["sections"] = list(set(prior_sections + sections_list))
         
         logger.info(f"🚀 Starting background workflow processing for job_id: {job_id}, workflow_id: {workflow_id}")
+        logger.info(f"📊 Graph state keys: {list(graph_state.keys())}")
+        logger.info(f"📋 Sections to process: {graph_state.get('sections', [])}")
+        
+        # Validate sections
+        sections_list = graph_state.get("sections", [])
+        if not sections_list:
+            raise ValueError("No sections selected for processing")
+        
+        # Update progress after setup
+        job_store[job_id]["progress"] = 10
+        job_store[job_id]["updated_at"] = time.time()
+        logger.info(f"📈 Progress updated to 10% - Starting graph execution")
+        sys.stdout.flush()
         
         # Track total nodes to estimate progress
-        total_nodes = len(graph_state.get("sections", [])) + 2  # +2 for read_pdf and extract_fir_fact
+        total_nodes = len(sections_list) + 2  # +2 for read_pdf and extract_fir_fact
+        logger.info(f"📊 Total nodes expected: {total_nodes}")
         completed_nodes = 0
         
         # Stream graph execution and update progress
         result = None
-        for event in graph.stream(graph_state, config=config):
-            for node_name, node_output in event.items():
-                completed_nodes += 1
-                progress = min(10 + int((completed_nodes / max(total_nodes, 1)) * 85), 95)
-                job_store[job_id]["progress"] = progress
-                job_store[job_id]["updated_at"] = time.time()
-                
-                logger.info(f"✅ Node completed: {node_name} (Progress: {progress}%)")
+        event_count = 0
+        logger.info(f"🔄 Starting graph.stream()...")
+        sys.stdout.flush()
+        
+        try:
+            for event in graph.stream(graph_state, config=config):
+                event_count += 1
+                logger.info(f"📦 Received event #{event_count}: {list(event.keys())}")
                 sys.stdout.flush()
+                
+                for node_name, node_output in event.items():
+                    completed_nodes += 1
+                    progress = min(10 + int((completed_nodes / max(total_nodes, 1)) * 85), 95)
+                    job_store[job_id]["progress"] = progress
+                    job_store[job_id]["updated_at"] = time.time()
+                    
+                    logger.info(f"✅ Node completed: {node_name} (Progress: {progress}%, Completed: {completed_nodes}/{total_nodes})")
+                    sys.stdout.flush()
+            
+            if event_count == 0:
+                logger.warning("⚠️ No events received from graph.stream() - graph may not have executed")
+                sys.stdout.flush()
+        except Exception as stream_error:
+            logger.error(f"❌ Error during graph.stream(): {str(stream_error)}", exc_info=True)
+            sys.stdout.flush()
+            raise
         
         # Get final state
         final_state = graph.get_state(config)
@@ -134,6 +165,10 @@ async def upload_pdf(
         sections_list = []
     
     logger.info(f"📋 Selected sections: {sections_list}")
+    
+    # Validate sections
+    if not sections_list:
+        raise HTTPException(status_code=400, detail="At least one section must be selected for analysis")
     
     # Generate unique job_id
     job_id = str(uuid.uuid4())
