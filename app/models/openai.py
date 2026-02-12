@@ -9,12 +9,12 @@ load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
 
 llm_model = ChatOpenAI(
-    model="gpt-4o-mini",
+    model="gpt-5-mini",
     temperature=0.1,
     api_key=openai_api_key,
     max_tokens=None,
     timeout=None,
-    max_retries=2
+    max_retries=5
 )
 
 embedding_model = OpenAIEmbeddings(

@@ -37,8 +37,32 @@ def route_all_sections(state: WorkflowState) -> list[str]:
     """Route to ALL selected sections - they all run in PARALLEL"""
     selected_sections = state.get("sections", [])
     routes = []
+    
+    # Check if any component that needs historical cases is selected
+    components_needing_historical_cases = [
+        "investigation_plan",
+        "evidence",
+        "dos_and_donts",
+        "weaknesses",
+        "defence_rebuttal",
+        "court_summary",
+        "chargesheet"
+    ]
+    
+    needs_historical_cases = any(
+        section in selected_sections 
+        for section in components_needing_historical_cases
+    )
+    
     historical_cases_selected = "historical_cases" in selected_sections
     
+    # If any component needs historical cases, ensure historical_cases runs first
+    # (either explicitly selected or auto-added as dependency)
+    if needs_historical_cases or historical_cases_selected:
+        routes.append("historical_cases")
+        # Don't route dependent components yet - they'll run after historical_cases completes
+    
+    # Route independent components (legal mappings, timeline) - these can run in parallel
     if "ndps" in selected_sections:
         routes.append("ndps_legal_mapping")
     if "bns" in selected_sections:
@@ -47,28 +71,28 @@ def route_all_sections(state: WorkflowState) -> list[str]:
         routes.append("bnss_legal_mapping")
     if "bsa" in selected_sections:
         routes.append("bsa_legal_mapping")
-    # Only route investigation_plan directly if historical_cases is not selected
-    # Otherwise, it will be routed from historical_cases
-    if "investigation_plan" in selected_sections and not historical_cases_selected:
-        routes.append("investigation_plan")
-    if "historical_cases" in selected_sections:
-        routes.append("historical_cases")
     if "timeline" in selected_sections:
         routes.append("investigation_and_legal_timeline")
-    # Only route components that need historical cases directly if historical_cases is not selected
-    # Otherwise, they will be routed from historical_cases
-    if "evidence" in selected_sections and not historical_cases_selected:
-        routes.append("generate_evidence_checklist")
-    if "dos_and_donts" in selected_sections and not historical_cases_selected:
-        routes.append("generate_dos_and_donts")
-    if "weaknesses" in selected_sections and not historical_cases_selected:
-        routes.append("generate_potential_prosecution_weaknesses")
-    if "defence_rebuttal" in selected_sections and not historical_cases_selected:
-        routes.append("generate_defence_perspective_rebuttal")
-    if "court_summary" in selected_sections and not historical_cases_selected:
-        routes.append("generate_summary_for_the_court")
-    if "chargesheet" in selected_sections and not historical_cases_selected:
-        routes.append("generate_chargesheet")
+    
+    # Only route components that need historical cases directly if:
+    # 1. They are selected AND
+    # 2. historical_cases is NOT needed (no component requires it)
+    # Otherwise, they will be routed from historical_cases after it completes
+    if not needs_historical_cases:
+        if "investigation_plan" in selected_sections:
+            routes.append("investigation_plan")
+        if "evidence" in selected_sections:
+            routes.append("generate_evidence_checklist")
+        if "dos_and_donts" in selected_sections:
+            routes.append("generate_dos_and_donts")
+        if "weaknesses" in selected_sections:
+            routes.append("generate_potential_prosecution_weaknesses")
+        if "defence_rebuttal" in selected_sections:
+            routes.append("generate_defence_perspective_rebuttal")
+        if "court_summary" in selected_sections:
+            routes.append("generate_summary_for_the_court")
+        if "chargesheet" in selected_sections:
+            routes.append("generate_chargesheet")
     
     return routes if routes else [END]
 

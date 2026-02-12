@@ -84,7 +84,7 @@ async def serve_react_app(full_path: str, request: Request):
     This enables client-side routing.
     """
     # Don't serve React app for API routes or static files
-    if full_path.startswith(("api/", "upload", "results/", "assets/", "docs", "openapi.json")):
+    if full_path.startswith(("api/", "upload", "status/", "results/", "assets/", "docs", "openapi.json")):
         return None
     
     # Don't serve React app for static file extensions

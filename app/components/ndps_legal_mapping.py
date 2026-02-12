@@ -37,7 +37,7 @@ class PointsToBeCharged(BaseModel):
 def ndps_legal_mapping(state: WorkflowState) -> dict:
     """
     Map NDPS legal provisions to FIR facts.
-    New approach: Extract 5 points -> Get top 5 sections per point -> Single LLM call with full context -> Deduplicate
+    New approach: Extract 5 points -> Get top 2 sections per point -> Single LLM call with full context -> Deduplicate
     """
     logger.info("Starting NDPS legal mapping")
     
@@ -84,12 +84,12 @@ Output: List exactly 5 factual points.
         logger.debug(f"Point {idx}: {point[:150]}...")
 
     # STEP 2: Query RAG for each point and collect all unique sections
-    logger.info("Step 2: Querying RAG for relevant NDPS sections")
+    logger.info("Step 2: Querying RAG for relevant NDPS sections (top 2 per point)")
     all_sections_dict = {}  # Use dict to deduplicate by section_number
     
     for idx, point in enumerate(points, 1):
         logger.debug(f"Querying RAG for point {idx}/{len(points)}")
-        results = query_ndps(point, k=5)
+        results = query_ndps(point, k=2)  # ← ONLY TOP 2
         logger.debug(f"Found {len(results)} results for point {idx}")
 
         for result in results:

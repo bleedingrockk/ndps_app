@@ -19,3 +19,14 @@ pdf_store = {}
 
 # Session management: maps session_id to session data
 session_store = {}
+
+# Job storage for asynchronous processing
+# Structure: job_id -> {
+#   "status": "processing" | "completed" | "failed",
+#   "workflow_id": str | None,
+#   "progress": int (0-100),
+#   "error": str | None,
+#   "created_at": timestamp,
+#   "updated_at": timestamp
+# }
+job_store = {}
