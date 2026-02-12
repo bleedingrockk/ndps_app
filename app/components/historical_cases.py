@@ -71,7 +71,7 @@ logger = logging.getLogger(__name__)
 class CaseSummary(BaseModel):
     case_relevant: bool = Field(description="Whether the case is about NDPS (Narcotic Drugs and Psychotropic Substances) Act or not")
     case_title: str = Field(description="A concise, descriptive title for the case (7-8 words maximum). Should capture the essence of the case without including names of parties or judges. Focus on the legal issue, substance involved, or key aspect (e.g., 'NDPS Act Ganja Possession Bail Denial Appeal')")
-    case_summary: str = Field(description="Comprehensive case summary (maximum 2000 tokens, approximately 1500-1600 words) covering: sections invoked, crime details, defence arguments, bail status and reasoning, prosecution approach, punishment/outcome, and key legal facts. Do not include names of parties or judges.")
+    case_summary: str = Field(description="Concise case summary (200-400 words maximum) covering: sections invoked, crime details, defence arguments, bail status and reasoning, prosecution approach, punishment/outcome, and key legal facts. Do not include names of parties or judges.")
     case_number: str | None = Field(default=None, description="Case number if mentioned in the judgment (e.g., '123', '456/2020', etc.). Return None if not found.")
     year: str | None = Field(default=None, description="Year of the judgment (e.g., '2020', '2021', etc.). Return None if not found.")
     relevancy_score: int = Field(description="Relevancy score from 0-10 indicating how relevant this case is to the FIR. 10 = highly relevant, 0 = not relevant. Consider: substance match, similar facts, similar legal issues, similar procedural aspects.")
@@ -90,7 +90,7 @@ INSTRUCTIONS:
 1. First determine if this is an NDPS (Narcotic Drugs and Psychotropic Substances Act) case
 2. Generate a concise, descriptive title (7-8 words maximum) that captures the essence of the case. Focus on the legal issue, substance involved, or key aspect. Do NOT include names of parties or judges. Example: "NDPS Act Ganja Possession Bail Denial Appeal"
 3. Extract case number and year from the content if mentioned (look for patterns like "Criminal Appeal No. 123 of 2020" or "2020 SCC")
-4. Extract and summarize the following information (maximum 2000 tokens, approximately 1500-1600 words):
+4. Extract and summarize the following information (200-400 words maximum):
    - **Sections Invoked**: List all relevant sections of NDPS Act or other applicable laws mentioned
    - **Crime Details**: Describe the nature of the crime, substance involved, quantity seized, circumstances of arrest/seizure
    - **Defence Arguments**: Summarize key defence arguments, legal points raised, and procedural challenges if any
@@ -108,11 +108,11 @@ INSTRUCTIONS:
    - 0: Not relevant - not an NDPS case or completely unrelated to search query
 
 IMPORTANT:
-- Keep the summary to maximum 1000 tokens (approximately 800-1000 words, can be shorter if all information is covered)
+- Keep the summary to 200-400 words maximum (be concise but cover all key points)
 - Focus on legal aspects, facts, and reasoning - DO NOT include names of parties, judges, or specific individuals
 - Use clear, concise language suitable for legal analysis
 - If information is not available in the content, state "Not mentioned" for that aspect
-- Ensure the summary is comprehensive, covering all the above points
+- Ensure the summary is comprehensive, covering all the above points within the word limit
 - Extract case_number and year from the content if available
 - Provide relevancy_score as an integer from 0-10
 """
@@ -209,16 +209,16 @@ def fetch_full_document(doc_id):
         logger.warning(f"Error fetching document {doc_id}: {str(e)}")
         return None, None
 
-def limit_content_for_llm(content, max_content_tokens=60000):
+def limit_content_for_llm(content, max_content_tokens=80000):
     """
     Limit content to approximately max_content_tokens.
     
     Model limit: 128,000 tokens total
     Overhead: ~2,000 tokens (prompt ~1K + schema ~222 + response ~500 + buffer)
-    Safe content limit: ~60,000 tokens for content (leaves 66K buffer)
+    Safe content limit: ~80,000 tokens for content (leaves 46K buffer)
     
     For legal text with citations/numbers: 1 token ≈ 2.5-3 characters (very conservative)
-    So 60K tokens ≈ 150K-180K characters
+    So 80K tokens ≈ 200K-240K characters
     Using 2.5 to be extra safe
     """
     if not content:
@@ -366,11 +366,27 @@ def search_indian_kanoon(search_query, max_results=10, fromdate="01-01-2000",
             response = requests.post(search_url, headers=get_headers(), timeout=30)
             
             if response.status_code == 200:
-                data = response.json()
+                try:
+                    data = response.json()
+                except json.JSONDecodeError as e:
+                    logger.error(f"Failed to parse JSON response: {e}")
+                    logger.error(f"Response text: {response.text[:500]}")
+                    break
+                    
                 docs = data.get('docs', [])
+                
+                # Log response details for debugging
+                if pagenum == 0:
+                    logger.debug(f"Search URL: {search_url}")
+                    logger.debug(f"API response keys: {list(data.keys()) if isinstance(data, dict) else 'Not a dict'}")
+                    logger.debug(f"Total docs in response: {len(docs) if docs else 0}")
+                    if isinstance(data, dict):
+                        logger.debug(f"Response metadata: {json.dumps({k: v for k, v in data.items() if k != 'docs'}, indent=2)[:500]}")
                 
                 if not docs:
                     logger.info(f"No more results found at page {pagenum}")
+                    if pagenum == 0:
+                        logger.warning(f"Initial search returned 0 results. Query: '{search_query}'")
                     break
                 
                 # Collect unique document IDs
@@ -424,12 +440,12 @@ def search_indian_kanoon(search_query, max_results=10, fromdate="01-01-2000",
             logger.warning(f"Could not fetch content for document {doc_id}, skipping")
             continue
         
-        # Limit content to ~60K tokens (leaving ~66K for prompt, schema, and response)
+        # Limit content to ~80K tokens (leaving ~46K for prompt, schema, and response)
         # Model limit is 128K tokens total
         # Overhead: prompt (~1K) + schema (~222) + response (~500) + buffer = ~2K
-        # But we use 60K to be very safe and account for tokenization variations
+        # But we use 80K to be very safe and account for tokenization variations
         original_length = len(full_content)
-        limited_content = limit_content_for_llm(full_content, max_content_tokens=60000)
+        limited_content = limit_content_for_llm(full_content, max_content_tokens=80000)
         limited_length = len(limited_content)
         
         if original_length != limited_length:
@@ -532,10 +548,12 @@ CRITICAL REQUIREMENTS:
 3. Extract other key facts: age of accused, quantity seized (small/intermediate/commercial), procedural issues, etc.
 
 For search_query:
-- Create a focused search query that includes the substance name and other relevant facts
-- Keep the query concise but specific - MUST include the substance type
-- Focus on legally significant aspects (quantities, procedures, accused characteristics, sections of NDPS Act)
-- Examples: "bail application Ganja NDPS cases", "commercial quantity Cannabis search and seizure", "Section 50 NDPS Act Heroin procedural compliance"
+- Create a SHORT, focused search query (maximum 6-8 words)
+- MUST include the substance name (e.g., "Ganja", "Cannabis", "Heroin")
+- Include 1-2 key legal terms (e.g., "bail", "NDPS", "commercial quantity")
+- Keep it SIMPLE - avoid exact quantities, specific section numbers, or too many details
+- Examples: "Ganja NDPS bail", "Cannabis commercial quantity", "Heroin NDPS Act", "Ganja bail application"
+- DO NOT include: exact quantities (like "36.525 kg"), specific section numbers, or lengthy descriptions
 
 For keywords:
 - MUST ALWAYS include "BAIL" as one of the keywords
@@ -594,6 +612,56 @@ Generate search_query, keywords, and substance_name:
             if case_id and case_id not in processed_case_ids:
                 processed_case_ids.add(case_id)
                 historical_cases_list.append(result)
+        
+        # If main query returned no results, try fallback searches with keywords
+        if len(historical_cases_list) == 0:
+            logger.warning(f"Main query returned 0 results, trying fallback searches with keywords...")
+            
+            # Try simpler queries using keywords
+            fallback_queries = []
+            
+            # Build fallback queries from keywords
+            if fir_substance:
+                # Try substance + "NDPS" + "bail"
+                fallback_queries.append(f"{fir_substance.capitalize()} NDPS bail")
+                fallback_queries.append(f"{fir_substance.capitalize()} NDPS")
+                fallback_queries.append(f"NDPS {fir_substance.capitalize()}")
+            
+            # Try with "BAIL" and substance
+            if "BAIL" in [k.upper() for k in keywords] and fir_substance:
+                fallback_queries.append(f"{fir_substance.capitalize()} bail")
+            
+            # Try just "NDPS bail" if we have substance
+            if fir_substance:
+                fallback_queries.append("NDPS bail")
+            
+            # Try each fallback query
+            for fallback_query in fallback_queries[:3]:  # Limit to 3 fallback attempts
+                if len(historical_cases_list) >= 10:
+                    break
+                    
+                logger.info(f"Trying fallback query: {fallback_query}")
+                try:
+                    fallback_results = search_indian_kanoon(
+                        search_query=fallback_query,
+                        max_results=10 - len(historical_cases_list),
+                        fromdate="01-01-2000",
+                        doctypes="judgments",
+                        fir_context=pdf_content
+                    )
+                    
+                    for result in fallback_results:
+                        case_id = result.get('case_id', '')
+                        if case_id and case_id not in processed_case_ids:
+                            processed_case_ids.add(case_id)
+                            historical_cases_list.append(result)
+                            
+                    if len(historical_cases_list) > 0:
+                        logger.info(f"Fallback query '{fallback_query}' found {len(historical_cases_list)} cases")
+                        break
+                except Exception as e:
+                    logger.warning(f"Fallback query '{fallback_query}' failed: {e}")
+                    continue
         
         # Simple processing - no additional filtering needed
         filtered_cases = []

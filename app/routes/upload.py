@@ -16,7 +16,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-
 @router.post("/upload")
 async def upload_pdf(
     request: Request,
@@ -36,6 +35,16 @@ async def upload_pdf(
     
     logger.info(f"📋 Selected sections: {sections_list}")
     
+    config = {"configurable": {"thread_id": workflow_id}}
+    
+    # ✅ KEY FIX: Load prior state from checkpoint FIRST
+    prior_state = graph.get_state(config)
+    if prior_state and prior_state.values:
+        graph_state = dict(prior_state.values)  # Start with prior results
+        logger.info(f"✅ Loaded prior state with keys: {list(graph_state.keys())}")
+    else:
+        graph_state = {}  # New workflow
+    
     # New workflow - require file
     if not file:
         if workflow_id not in results_store:
@@ -47,45 +56,39 @@ async def upload_pdf(
         try:
             file_bytes = await file.read()
             logger.info(f"📄 PDF file received: {file.filename}, size: {len(file_bytes)} bytes")
+            graph_state["pdf_bytes"] = file_bytes
+            graph_state["pdf_filename"] = file.filename or "document.pdf"
         except Exception as e:
             logger.error(f"❌ Error reading file: {str(e)}")
             raise HTTPException(status_code=500, detail=f"Error reading file: {str(e)}")
     
-    # Prepare state
-    graph_state = {"sections": sections_list}
-    if file:
-        graph_state["pdf_bytes"] = file_bytes
-        graph_state["pdf_filename"] = file.filename or "document.pdf"
+    # ✅ Update sections (merge with prior if they exist)
+    prior_sections = graph_state.get("sections", [])
+    graph_state["sections"] = list(set(prior_sections + sections_list))  # Deduplicate
+    logger.info(f"📋 Running with sections: {graph_state['sections']}")
     
-    # Stream graph execution to see real-time progress
+    # Stream graph execution
     logger.info("🚀 Starting LangGraph execution...")
-    config = {"configurable": {"thread_id": workflow_id}}
     result = None
     
     try:
-        # Use stream to get real-time updates and log progress
-        # The stream executes the graph and yields events as each node completes
         import sys
         for event in graph.stream(graph_state, config=config):
-            # Log each node execution as it completes
             for node_name, node_output in event.items():
                 logger.info(f"✅ Node completed: {node_name}")
-                sys.stdout.flush()  # Force flush to see logs immediately
+                sys.stdout.flush()
                 if isinstance(node_output, dict):
-                    # Log what was added to state
                     keys_added = [k for k in node_output.keys() if k != "pdf_bytes"]
                     if keys_added:
                         logger.debug(f"   State updated with keys: {keys_added}")
                         sys.stdout.flush()
         
-        # After streaming completes, get the final state from checkpointer
-        # The stream already executed everything, so we just need the final state
+        # Get final state
         final_state = graph.get_state(config)
         if final_state and final_state.values:
             result = final_state.values
         else:
-            # Fallback: if state not available, invoke to get final result
-            logger.warning("⚠️ Could not get state from checkpointer, invoking graph to get final result")
+            logger.warning("⚠️ Could not get state from checkpointer")
             sys.stdout.flush()
             result = graph.invoke(graph_state, config=config)
         
@@ -97,7 +100,7 @@ async def upload_pdf(
         sys.stdout.flush()
         raise HTTPException(status_code=500, detail=f"Error processing workflow: {str(e)}")
     
-    # Store result (drop pdf_bytes)
+    # Store result
     result.pop("pdf_bytes", None)
     result["workflow_id"] = workflow_id
     results_store[workflow_id] = result
