@@ -114,10 +114,32 @@ USE THE PROVIDED HISTORICAL CASES: Reference the actual historical cases provide
 - Legal precedents on chain of custody, sealing, sampling, and witness requirements
 - Case law that clarifies what makes evidence admissible or inadmissible in NDPS cases
 
-Output Format (EXACT):
-4. Evidence Checklist (Critical Items & Admissibility)
- - Evidence Name: Description of the evidence, its importance, chain of custody requirements, admissibility formalities, and legal compliance. Include specific details from FIR (exhibit numbers, dates, witness names, locations, quantities, times). Mention what could go wrong.
- - Another Evidence Name: Description...
+Output Format (EXACT - Use Markdown formatting):
+## Evidence Checklist (Critical Items & Admissibility)
+
+### Physical Evidence
+- **Evidence Name**: Detailed description (3-5 sentences) covering:
+  * Its importance and role in establishing the case
+  * Chain of custody requirements and procedures
+  * Admissibility formalities and legal compliance requirements
+  * Specific details from FIR (exhibit numbers, dates, witness names, locations, quantities, times)
+  * Potential weaknesses or compliance gaps that could affect admissibility
+  * Reference to historical cases if relevant
+
+### Documentary Evidence
+- **Evidence Name**: [Same detailed format as above]
+
+### Forensic Evidence
+- **Evidence Name**: [Same detailed format as above]
+
+### Electronic Evidence
+- **Evidence Name**: [Same detailed format as above]
+
+### Witness Evidence
+- **Evidence Name**: [Same detailed format as above]
+
+### Procedural Compliance Records
+- **Evidence Name**: [Same detailed format as above]
 
 EXAMPLE FORMAT:
  - Seized Ganji Bundles: The 5 bundles weighing 25.5 kg (exhibits Mark-A,B) seized on 15-Jan-2024 at 14:30 hrs at Secunderabad Railway Station Platform No. 3 are primary evidence. Must be sealed and stored with clear chain of custody. Admissibility requires all seizure formalities (panchnama, seals, signatures) be impeccable.
@@ -136,15 +158,17 @@ EVIDENCE CATEGORIES TO COVER:
 - Legal notices and compliance documentation
 
 REQUIREMENTS:
-- Each bullet point should be ONE evidence item with its name followed by colon
-- Write detailed paragraph descriptions (3-5 sentences minimum per item)
+- Organize evidence into clear categories (Physical, Documentary, Forensic, Electronic, Witness, Procedural Compliance)
+- Each bullet point should be ONE evidence item with its name in **bold** followed by colon
+- Write detailed paragraph descriptions (3-5 sentences minimum per item) covering all aspects
 - MANDATORY: Include SPECIFIC details from FIR in EVERY point - names of accused/witnesses, exact dates, times, locations, quantities, exhibit numbers, case numbers, station names
 - Include specific legal sections (NDPS Sec.50, Evidence Act Sec.65B, etc.)
 - Mention chain of custody, sealing procedures, witness requirements
-- Note potential weaknesses or compliance gaps
+- Note potential weaknesses or compliance gaps that could affect admissibility
 - Reference concrete FIR details (not generic placeholders)
-- Cover 10-15 evidence items comprehensively
+- Cover 15-20 evidence items comprehensively across all categories
 - Use actual names, numbers, and specifics from the FIR wherever available
+- Use proper Markdown formatting with headers, bold text, and bullet points for better readability
 - INCORPORATE THE PROVIDED HISTORICAL CASES: Where relevant, cite the actual historical cases provided above that illustrate:
   * Evidence admissibility standards (e.g., "As seen in Case 1: [case title from above], the panchnama must...")
   * Cases where evidence was rejected (e.g., "In Case 2: [case title from above], the court rejected evidence because...")

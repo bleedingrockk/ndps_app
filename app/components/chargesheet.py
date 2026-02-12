@@ -69,20 +69,27 @@ def generate_chargesheet(state: WorkflowState) -> dict:
     historical_cases_text = format_historical_cases_for_prompt(historical_cases)
     
     # Construct content for LLM
-    content_for_llm = f"""You are an expert NDPS Act prosecutor preparing a comprehensive chargesheet for a criminal case.
+    content_for_llm = f"""You are an expert NDPS Act prosecutor preparing a COMPREHENSIVE, DETAILED CHARGESHEET (Final Report u/s 173 CrPC) for a criminal case.
 
-Your task is to analyse the FIR content and available legal sections, then generate a **professional chargesheet** that presents the prosecution's case clearly and persuasively.
+IMPORTANT: This is a FORMAL CHARGESHEET - it should be:
+- COMPREHENSIVE and detailed (unlike a court summary which is concise)
+- FORMAL document format, structured like an official chargesheet
+- DETAILED with all sections, witnesses, documents, muddamal listed
+- More like a "Final Report" or "Chargesheet Document" with complete investigation details
+
+Your task is to analyse the FIR content and available legal sections, then generate a **comprehensive, formal chargesheet document** that presents the prosecution's case with complete details.
 
 You MUST strictly follow these rules:
 
 1. Base every point ONLY on the facts available in the FIR.
 2. Select ONLY the MOST RELEVANT sections from each Act (NDPS, BNS, BNSS, BSA) based on the FIR facts.
 3. Do NOT include sections that are not directly applicable to this specific case.
-4. Extract specific details: names, dates, times, locations, quantities, sections, procedural compliance points
-5. Frame the case in a legally sound and persuasive manner
-6. Use formal legal language appropriate for court documents
+4. Extract ALL specific details: names, dates, times, locations, quantities, sections, procedural compliance points, witness names, document details, muddamal items
+5. Frame the case in a legally sound and comprehensive manner
+6. Use formal legal language appropriate for official chargesheet documents
 7. Structure the output exactly as per the schema provided
-8. Where relevant, reference the provided historical cases to strengthen legal arguments and establish precedents
+8. Include comprehensive details in all fields (unlike court summary which is concise)
+9. Where relevant, reference the provided historical cases to strengthen legal arguments and establish precedents
 
 {historical_cases_text}
 ### FIR CONTENT:
@@ -113,41 +120,44 @@ You MUST strictly follow these rules:
     
     content_for_llm += f"""
 
-### INSTRUCTIONS FOR GENERATING CHARGESHEET:
+### INSTRUCTIONS FOR GENERATING COMPREHENSIVE CHARGESHEET (FORMAL DOCUMENT):
+
+This is a FORMAL CHARGESHEET - make it comprehensive, detailed, and structured like an official document. Include all relevant details.
 
 1. **Case Title**: Format as "STATE OF [STATE NAME] vs. [ACCUSED NAME]" with qualifiers like "(JUVENILE)" if applicable. Extract state and accused name from FIR.
 
-2. **Section Selection**: Select ONLY the most relevant sections from each Act:
-   - **NDPS Sections**: Include sections for possession, quantity classification, conspiracy if applicable. Usually 2-5 sections.
-   - **BNS Sections**: Include only if there are general criminal law provisions applicable (e.g., conspiracy, attempt). May be empty if not applicable.
-   - **BNSS Sections**: Include only if there are procedural provisions applicable (e.g., search, seizure, arrest procedures). May be empty if not applicable.
-   - **BSA Sections**: Include only if there are evidence-related provisions applicable. May be empty if not applicable.
+2. **Section Selection**: Select ALL relevant sections from each Act (be comprehensive but accurate):
+   - **NDPS Sections**: Include all applicable sections for possession, quantity classification, conspiracy, abetment if applicable. Usually 3-6 sections.
+   - **BNS Sections**: Include if there are general criminal law provisions applicable (e.g., conspiracy, attempt, common intention). May be empty if not applicable.
+   - **BNSS Sections**: Include if there are procedural provisions applicable (e.g., search, seizure, arrest procedures, custody). May be empty if not applicable.
+   - **BSA Sections**: Include if there are evidence-related provisions applicable (e.g., electronic evidence, expert evidence). May be empty if not applicable.
    
-   IMPORTANT: Only include sections that are DIRECTLY relevant to this specific case based on FIR facts. Do not include generic or marginally relevant sections.
+   IMPORTANT: Include all sections that are DIRECTLY relevant to this specific case based on FIR facts. Be comprehensive but accurate.
 
-3. **Core Issue**: Frame as a question that captures the central legal question the court must decide. Example: "Whether the accused was found in conscious and exclusive possession of [quantity] of [substance], in compliance with mandatory NDPS safeguards, warranting prosecution under NDPS Act."
+3. **Core Issue**: Frame as a detailed question that captures the central legal question the court must decide. Be comprehensive. Example: "Whether the accused was found in conscious and exclusive possession of [quantity] of [substance], in compliance with mandatory NDPS safeguards, warranting prosecution under NDPS Act, and whether the procedural requirements under Sections 50, 52A, 57 NDPS Act were duly complied with."
 
-4. **Date and Place**: "DD.MM.YYYY, [Location]" format extracted from FIR.
+4. **Date and Place**: "DD.MM.YYYY, [Location]" format extracted from FIR with complete details.
 
-5. **Recovery**: Description of what was recovered, from where, quantity - be specific with details from FIR.
+5. **Recovery**: COMPREHENSIVE description of what was recovered, from where, quantity, circumstances - be detailed and specific with all details from FIR.
 
-6. **Quantity**: Classification (small/intermediate/commercial) and actual quantity with legal implications.
+6. **Quantity**: Detailed classification (small/intermediate/commercial) and actual quantity with complete legal implications and punishment range.
 
-7. **Safeguards**: List of compliance points (e.g., "Section 50 NDPS – explained & waived", "Section 43 NDPS – public place search", "Videography & sealing done contemporaneously")
+7. **Safeguards**: COMPREHENSIVE list of ALL compliance points (5-8 items). Include all safeguards: Section 50, Section 43, Section 52A, Section 57, videography, sealing, sampling, juvenile safeguards if applicable, etc.
 
-8. **Conscious Possession Proven**: List of facts proving conscious possession (admissions, exclusive custody, no licence, corroborating evidence like train tickets, etc.)
+8. **Conscious Possession Proven**: COMPREHENSIVE list of ALL facts proving conscious possession (5-8 items). Include admissions, exclusive custody, no licence, corroborating evidence, travel documents, statements, etc.
 
-9. **Procedural Compliance**: List of procedural safeguards complied with (sections, documentation, chain of custody, FSL status)
+9. **Procedural Compliance**: COMPREHENSIVE list of ALL procedural safeguards complied with (5-8 items). Include all sections, documentation, chain of custody, FSL status, witness joining, etc.
 
-10. **Legal Position**: List of legal points supporting prosecution (jurisdiction, applicability of sections, precedent if relevant, juvenile law position if applicable). Where applicable, reference the provided historical cases to establish legal precedents (e.g., "As established in Case 1: [case title from above], the court held that...")
+10. **Legal Position**: COMPREHENSIVE list of ALL legal points supporting prosecution (5-8 items). Include jurisdiction, applicability of sections, precedent, juvenile law position, bail considerations, etc. Where applicable, reference the provided historical cases to establish legal precedents (e.g., "As established in Case 1: [case title from above], the court held that...")
 
-11. **Judicial Balance**: Write 2-3 sentences that balance the seriousness of the offence with any mitigating factors, public interest, and legal principles. Acknowledge both prosecution and defence perspectives where appropriate. Where relevant, reference the provided historical cases that illustrate similar judicial considerations.
+11. **Judicial Balance**: Write 3-5 sentences that comprehensively balance the seriousness of the offence with any mitigating factors, public interest, and legal principles. Acknowledge both prosecution and defence perspectives. Where relevant, reference the provided historical cases that illustrate similar judicial considerations.
 
-12. **Prosecution Prayer**: List specific requests to the court, typically:
+12. **Prosecution Prayer**: COMPREHENSIVE list of specific requests to the court (4-6 items):
    - "Cognizance of offence"
    - "Framing of charges"
    - "Bail to be denied in interest of justice" (if applicable)
    - "Trial to proceed under [relevant Act] with NDPS rigour preserved"
+   - Any other specific prayers based on case facts
 
 ### CRITICAL REQUIREMENTS:
 - Extract ALL specific details from FIR: names, dates, times, locations, quantities, exhibit numbers, seal numbers

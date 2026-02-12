@@ -6,9 +6,13 @@ import os
 
 logger = logging.getLogger(__name__)
 
+class TimelineDay(BaseModel):
+    date_string: str = Field(description="Date string in the format of YYYY-MM-DD or relative format like 'Day 0', 'Day 1', etc.")
+    day_label: str = Field(description="Label for the day (e.g., 'Day 0 - Arrest & Seizure', 'Day 1 - Production before Court')")
+    investigation_or_legal_plan: str = Field(description="Detailed investigation and legal steps for this day. Should be comprehensive, covering all procedural requirements, deadlines, compliance points, and legal implications. Minimum 300-500 words per day.")
+    
 class InvestigationAndLegalTimeline(BaseModel):
-    date_string: str = Field(description="Date string in the format of YYYY-MM-DD")
-    investigation_or_legal_plan: str = Field(description="Investigation plan for the given date string")
+    timeline_days: list[TimelineDay] = Field(description="List of timeline days with detailed investigation and legal plans. Should cover at least 7-10 days including: Day 0 (arrest/seizure), Day 1 (production), sampling, FSL dispatch, chargesheet filing, bail considerations, and other critical milestones.")
     
 ENHANCED_LEGAL_FACTS_FOR_TIMELINES = """
 -- ESSENTIAL STATUTORY DEADLINES / RULES (use these as fixed inputs) --
@@ -150,23 +154,77 @@ def investigation_and_legal_timeline(state: WorkflowState) -> dict:
     logger.debug(f"Processing PDF content of length: {len(pdf_content)} characters")
     
     try:
-        # Invoke LLM with legal facts template and PDF content
-        response = investigation_and_legal_timeline_llm.invoke(
-            ENHANCED_LEGAL_FACTS_FOR_TIMELINES + "\n\n--- FIR DOCUMENT ---\n" + pdf_content
-        )
+        # Enhanced prompt for comprehensive multi-day timeline
+        enhanced_prompt = f"""{ENHANCED_LEGAL_FACTS_FOR_TIMELINES}
+
+--- FIR DOCUMENT ---
+{pdf_content}
+
+TASK: Generate a COMPREHENSIVE, DETAILED multi-day investigation and legal timeline covering at least 7-10 days.
+
+REQUIREMENTS:
+1. Generate timeline for AT LEAST 7-10 days covering:
+   - Day 0: Arrest, seizure, immediate procedures (Section 50, panchnama, sealing, sampling initiation)
+   - Day 1: Production before Magistrate/JJB, custody decisions, bail considerations
+   - Day 2-3: Sampling completion, FSL dispatch, witness statements, investigation continuation
+   - Day 4-7: FSL report receipt (if applicable), evidence compilation, chargesheet preparation
+   - Day 8-10: Chargesheet filing, default bail deadlines, trial preparation
+   - Include any additional critical days based on FIR facts
+
+2. Each day MUST include:
+   - Specific date (calculate from FIR date) or relative day label
+   - Detailed day label describing the main activity
+   - Comprehensive plan (300-500 words minimum) covering:
+     * All procedural steps required that day
+     * Legal compliance requirements and deadlines
+     * Potential challenges or defence arguments
+     * Evidence collection and documentation needs
+     * Witness examination requirements
+     * Court/JJB production requirements
+     * Bail considerations and Section 37 NDPS implications
+     * FSL/sampling deadlines and procedures
+     * Any juvenile-specific or gender-specific requirements
+
+3. Be SPECIFIC to the FIR:
+   - Reference actual names, dates, times, locations from FIR
+   - Reference specific quantities, exhibit numbers, seal numbers
+   - Address specific procedural compliance points mentioned in FIR
+   - Consider accused age (juvenile/adult), gender, substance type, quantity classification
+
+4. Include legal deadlines and consequences:
+   - 24-hour production deadline
+   - 48-hour superior officer reporting (Section 57)
+   - 72-hour FSL dispatch requirement
+   - Default bail deadlines (60/90 days)
+   - Section 37 NDPS bail rigour implications
+   - JJ Act requirements if juvenile
+
+5. Format each day's plan as a detailed narrative covering all aspects comprehensively.
+
+Generate the complete multi-day timeline now:"""
+        
+        # Invoke LLM with enhanced prompt
+        response = investigation_and_legal_timeline_llm.invoke(enhanced_prompt)
         
         # Validate response
-        if not response or not response.investigation_or_legal_plan:
+        if not response or not response.timeline_days or len(response.timeline_days) == 0:
             logger.warning("LLM returned empty or incomplete response")
             raise ValueError("Failed to generate valid timeline from LLM")
         
-        logger.info(f"Successfully generated timeline for date: {response.date_string}")
+        logger.info(f"Successfully generated timeline with {len(response.timeline_days)} days")
         
-        # Return structured output with date and timeline
+        # Format timeline for frontend (backward compatible)
+        timeline_text = "\n\n".join([
+            f"## {day.day_label}\n**Date:** {day.date_string}\n\n{day.investigation_or_legal_plan}"
+            for day in response.timeline_days
+        ])
+        
+        # Return structured output with all days
         return {
             "investigation_and_legal_timeline": {
-                "date_string": response.date_string,
-                "timeline": response.investigation_or_legal_plan
+                "date_string": response.timeline_days[0].date_string if response.timeline_days else "",
+                "timeline": timeline_text,
+                "timeline_days": [day.model_dump() for day in response.timeline_days]
             }
         }
         

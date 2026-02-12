@@ -46,18 +46,25 @@ def generate_summary_for_the_court(state: WorkflowState) -> dict:
     historical_cases_text = format_historical_cases_for_prompt(historical_cases)
     
     # Construct content for LLM
-    content_for_llm = f"""You are an expert NDPS Act prosecutor preparing a comprehensive court summary for a criminal case.
+    content_for_llm = f"""You are an expert NDPS Act prosecutor preparing a CONCISE, PERSUASIVE court summary for submission before the Juvenile Justice Board / Special Court.
 
-Your task is to analyse the FIR content provided below and generate a **professional court summary** that presents the prosecution's case clearly and persuasively.
+IMPORTANT: This is a SUMMARY FOR THE COURT - it should be:
+- CONCISE and focused (not overly detailed like a chargesheet)
+- NARRATIVE style, presenting the prosecution's case in a compelling, readable format
+- PERSUASIVE but factual, designed to help the court understand the case quickly
+- More like a "prosecution brief" or "case summary" rather than a formal chargesheet document
+
+Your task is to analyse the FIR content provided below and generate a **concise, persuasive court summary** that presents the prosecution's case clearly and compellingly.
 
 You MUST strictly follow these rules:
 
 1. Base every point ONLY on the facts available in the FIR.
 2. Extract specific details: names, dates, times, locations, quantities, sections, procedural compliance points
-3. Frame the case in a legally sound and persuasive manner
-4. Use formal legal language appropriate for court documents
+3. Frame the case in a legally sound and persuasive NARRATIVE manner (not just lists)
+4. Use formal but readable legal language appropriate for court submissions
 5. Structure the output exactly as per the schema provided
-6. Where relevant, reference the provided historical cases to strengthen legal arguments and establish precedents
+6. Keep it CONCISE - focus on key facts, legal position, and prosecution prayer
+7. Where relevant, reference the provided historical cases to strengthen legal arguments and establish precedents
 
 {historical_cases_text}
 ### FIR CONTENT:
@@ -79,31 +86,33 @@ You MUST strictly follow these rules:
     
     content_for_llm += f"""
 
-### INSTRUCTIONS FOR GENERATING COURT SUMMARY:
+### INSTRUCTIONS FOR GENERATING COURT SUMMARY (CONCISE, NARRATIVE STYLE):
+
+This is a SUMMARY FOR THE COURT - keep it concise, narrative, and persuasive. Focus on presenting the case compellingly rather than exhaustive detail.
 
 1. **Case Title**: Format as "STATE OF [STATE NAME] vs. [ACCUSED NAME]" with qualifiers like "(JUVENILE)" if applicable. Extract state and accused name from FIR.
 
-2. **NDPS Sections**: List all applicable NDPS Act sections based on the offence. Include sections for possession, quantity, conspiracy if applicable.
+2. **NDPS Sections**: List all applicable NDPS Act sections (concise list, usually 2-4 sections). Include sections for possession, quantity, conspiracy if applicable.
 
-3. **Core Issue**: Frame as a question that captures the central legal question the court must decide. Example: "Whether the accused was found in conscious and exclusive possession of [quantity] of [substance], in compliance with mandatory NDPS safeguards, warranting prosecution under NDPS Act."
+3. **Core Issue**: Frame as a question that captures the central legal question the court must decide. Keep it concise and focused. Example: "Whether the accused was found in conscious and exclusive possession of [quantity] of [substance], in compliance with mandatory NDPS safeguards, warranting prosecution under NDPS Act."
 
 4. **Date and Place**: "DD.MM.YYYY, [Location]" format
 
-5. **Recovery**: Description of what was recovered, from where, quantity
+5. **Recovery**: CONCISE narrative description of what was recovered, from where, quantity - 2-3 sentences maximum
 
-6. **Quantity**: Classification (small/intermediate/commercial) and actual quantity
+6. **Quantity**: Brief classification (small/intermediate/commercial) and actual quantity with legal implication
 
-7. **Safeguards**: List of compliance points (e.g., "Section 50 NDPS – explained & waived", "Section 43 NDPS – public place search", "Videography & sealing done")
+7. **Safeguards**: CONCISE list of key compliance points (3-5 items maximum). Focus on most critical ones like Section 50, Section 43, videography, juvenile safeguards if applicable.
 
-8. **Conscious Possession Proven**: List of facts proving conscious possession (admissions, exclusive custody, no licence, corroborating evidence)
+8. **Conscious Possession Proven**: CONCISE list of key facts proving conscious possession (3-5 items maximum). Focus on strongest evidence.
 
-9. **Procedural Compliance**: List of procedural safeguards complied with (sections, documentation, chain of custody)
+9. **Procedural Compliance**: CONCISE list of key procedural safeguards complied with (3-5 items maximum). Focus on most critical compliance points.
 
-10. **Legal Position**: List of legal points supporting prosecution (jurisdiction, applicability of sections, precedent if relevant). Where applicable, reference the provided historical cases to establish legal precedents (e.g., "As established in Case 1: [case title from above], the court held that...")
+10. **Legal Position**: CONCISE list of key legal points supporting prosecution (3-5 items maximum). Focus on strongest legal arguments. Where applicable, briefly reference the provided historical cases (e.g., "As established in Case 1: [case title], the court held that...")
 
-11. **Judicial Balance**: Write 2-3 sentences that balance the seriousness of the offence with any mitigating factors, public interest, and legal principles. Acknowledge both prosecution and defence perspectives where appropriate. Where relevant, reference the provided historical cases that illustrate similar judicial considerations.
+11. **Judicial Balance**: Write 2-3 sentences that balance the seriousness of the offence with any mitigating factors, public interest, and legal principles. Keep it concise and balanced.
 
-12. **Prosecution Prayer**: List specific requests to the court, typically:
+12. **Prosecution Prayer**: CONCISE list of specific requests to the court (3-4 items maximum):
    - "Cognizance of offence"
    - "Framing of charges"
    - "Bail to be denied in interest of justice" (if applicable)
