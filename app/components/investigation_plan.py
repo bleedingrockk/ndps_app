@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from app.langgraph.state import WorkflowState
 from app.models.openai import llm_model
 from app.utils.retry import exponential_backoff_retry
+from app.utils.format_cases import format_historical_cases_for_prompt
 import logging
 
 logger = logging.getLogger(__name__)
@@ -174,9 +175,24 @@ def investigation_plan(state: WorkflowState) -> dict:
     
     pdf_content = state["pdf_content_in_english"]
     logger.debug(f"FIR content length: {len(pdf_content)} characters")
+    
+    # Get historical cases if available
+    historical_cases = state.get("historical_cases", [])
+    historical_cases_text = format_historical_cases_for_prompt(historical_cases)
 
     llm_with_structured_output = llm_model.with_structured_output(InvestigationPlan)
-    prompt = PROMPT.replace("[PASTE FIR HERE]", pdf_content)
+    
+    # Add historical cases to the prompt
+    prompt_with_cases = PROMPT.replace("[PASTE FIR HERE]", f"{historical_cases_text}\n\nFIR Text:\n{pdf_content}")
+    
+    # Add instruction to use historical cases
+    prompt_with_cases += "\n\nIMPORTANT: Where relevant, reference the provided historical cases to illustrate:\n"
+    prompt_with_cases += "- Successful investigation strategies from similar cases\n"
+    prompt_with_cases += "- Common procedural pitfalls to avoid (as seen in cases where acquittals occurred)\n"
+    prompt_with_cases += "- Legal precedents that establish mandatory investigation steps\n"
+    prompt_with_cases += "- Examples of proper evidence collection and procedural compliance\n"
+    
+    prompt = prompt_with_cases
     
     @exponential_backoff_retry(max_retries=5, max_wait=60)
     def _invoke_investigation_plan():

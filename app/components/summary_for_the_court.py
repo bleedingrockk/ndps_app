@@ -3,6 +3,7 @@ from app.langgraph.state import WorkflowState
 from app.models.openai import llm_model
 from typing import List
 from app.utils.retry import exponential_backoff_retry
+from app.utils.format_cases import format_historical_cases_for_prompt
 import logging
 
 logger = logging.getLogger(__name__)
@@ -40,6 +41,10 @@ def generate_summary_for_the_court(state: WorkflowState) -> dict:
     ndps_sections = state.get("ndps_sections_mapped", [])
     ndps_section_numbers = [s.get('section_number', '') for s in ndps_sections if isinstance(s, dict) and s.get('section_number')]
     
+    # Get historical cases if available
+    historical_cases = state.get("historical_cases", [])
+    historical_cases_text = format_historical_cases_for_prompt(historical_cases)
+    
     # Construct content for LLM
     content_for_llm = f"""You are an expert NDPS Act prosecutor preparing a comprehensive court summary for a criminal case.
 
@@ -52,7 +57,9 @@ You MUST strictly follow these rules:
 3. Frame the case in a legally sound and persuasive manner
 4. Use formal legal language appropriate for court documents
 5. Structure the output exactly as per the schema provided
+6. Where relevant, reference the provided historical cases to strengthen legal arguments and establish precedents
 
+{historical_cases_text}
 ### FIR CONTENT:
 {pdf_content}
 
@@ -92,9 +99,9 @@ You MUST strictly follow these rules:
 
 9. **Procedural Compliance**: List of procedural safeguards complied with (sections, documentation, chain of custody)
 
-10. **Legal Position**: List of legal points supporting prosecution (jurisdiction, applicability of sections, precedent if relevant)
+10. **Legal Position**: List of legal points supporting prosecution (jurisdiction, applicability of sections, precedent if relevant). Where applicable, reference the provided historical cases to establish legal precedents (e.g., "As established in Case 1: [case title from above], the court held that...")
 
-11. **Judicial Balance**: Write 2-3 sentences that balance the seriousness of the offence with any mitigating factors, public interest, and legal principles. Acknowledge both prosecution and defence perspectives where appropriate.
+11. **Judicial Balance**: Write 2-3 sentences that balance the seriousness of the offence with any mitigating factors, public interest, and legal principles. Acknowledge both prosecution and defence perspectives where appropriate. Where relevant, reference the provided historical cases that illustrate similar judicial considerations.
 
 12. **Prosecution Prayer**: List specific requests to the court, typically:
    - "Cognizance of offence"
@@ -109,6 +116,7 @@ You MUST strictly follow these rules:
 - Be precise and factual - no speculation
 - Present the prosecution case persuasively but accurately
 - If accused is a juvenile, mention it in case title and address JJ Act implications
+- Where relevant, cite the provided historical cases to strengthen legal arguments and establish precedents
 
 Generate the court summary now:
 """

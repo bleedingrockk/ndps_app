@@ -3,6 +3,7 @@ from app.langgraph.state import WorkflowState
 from app.models.openai import llm_model
 from typing import List
 from app.utils.retry import exponential_backoff_retry
+from app.utils.format_cases import format_historical_cases_for_prompt
 import logging
 import json
 
@@ -32,6 +33,9 @@ def generate_defence_perspective_rebuttal(state: WorkflowState) -> dict:
     
     pdf_content = state["pdf_content_in_english"]
     
+    # Get historical cases if available
+    historical_cases = state.get("historical_cases", [])
+    historical_cases_text = format_historical_cases_for_prompt(historical_cases)
     
     # Construct content for LLM
     content_for_llm = f"""You are an expert NDPS Act criminal law analyst, trial lawyer, and prosecution strategy advisor with deep knowledge of Supreme Court and High Court NDPS jurisprudence.
@@ -50,15 +54,15 @@ You MUST strictly follow these rules:
    - quantity and nature of contraband
    - seal numbers, exhibit numbers
    - sections of NDPS Act
-5. USE HISTORICAL CASES AND PRECEDENTS: Reference relevant case law, Supreme Court judgments, and High Court decisions from your knowledge that illustrate:
+5. USE THE PROVIDED HISTORICAL CASES: Reference the actual historical cases provided below that illustrate:
    - Successful defence arguments that led to acquittals (for defence perspective)
    - Prosecution strategies that successfully countered defence arguments (for rebuttal)
    - Legal precedents that establish procedural requirements or evidentiary standards
    - Case law that clarifies what constitutes valid compliance or non-compliance
    - Examples of cases where similar facts resulted in conviction or acquittal
 6. Structure the output exactly as per the schema:
-   - defence_perspective: list of defence arguments (cite relevant case law where applicable)
-   - rebuttal: list of prosecution counter-arguments (cite relevant case law where applicable)
+   - defence_perspective: list of defence arguments (cite the provided historical cases where applicable)
+   - rebuttal: list of prosecution counter-arguments (cite the provided historical cases where applicable)
 
 ### You must consider and intelligently apply ALL the following recognised REASONS OF ACQUITTAL IN NDPS ACT CASES while generating defence and rebuttal:
 
@@ -123,20 +127,21 @@ L. **Witnesses not properly briefed**
    - Vague or inconsistent testimony
 
 ### Output expectations:
-- Defence Perspective: Argue how the above lapses create doubt and favour acquittal. Reference historical cases where similar procedural lapses led to acquittals (e.g., "As seen in [Case Name], failure to comply with Section 50 resulted in acquittal...", "Following the precedent in [Case Name], the defence can argue that...")
-- Rebuttal: Show how prosecution can neutralise the defence using FIR facts, legal presumptions (Sections 35, 54 NDPS Act), explanations, and case-law-consistent reasoning. Cite cases where prosecution successfully countered similar defence arguments (e.g., "As held in [Case Name], the prosecution can establish...", "The Supreme Court in [Case Name] clarified that...", "Following [Case Name], the prosecution can argue that...")
+- Defence Perspective: Argue how the above lapses create doubt and favour acquittal. Reference the provided historical cases where similar procedural lapses led to acquittals (e.g., "As seen in Case 1: [case title from above], failure to comply with Section 50 resulted in acquittal...", "Following the precedent in Case 2: [case title from above], the defence can argue that...")
+- Rebuttal: Show how prosecution can neutralise the defence using FIR facts, legal presumptions (Sections 35, 54 NDPS Act), explanations, and case-law-consistent reasoning. Cite the provided cases where prosecution successfully countered similar defence arguments (e.g., "As established in Case 3: [case title from above], the prosecution can establish...", "As seen in Case 4: [case title from above], the court clarified that...", "Following Case 5: [case title from above], the prosecution can argue that...")
 
-### Incorporating Case Law:
-- For Defence Perspective: Cite cases where similar procedural defects, non-compliance, or evidentiary gaps led to acquittals. Examples: State of Rajasthan v/s Parmanand (Section 50 individual notice), cases on sealing defects, sampling delays, witness non-joining, etc.
-- For Rebuttal: Cite cases where prosecution successfully overcame similar challenges, established compliance, or where courts upheld convictions despite defence arguments. Examples: cases upholding convictions based on proper compliance, cases clarifying procedural requirements, cases establishing legal presumptions.
+### Incorporating the Provided Historical Cases:
+- For Defence Perspective: Cite the provided cases where similar procedural defects, non-compliance, or evidentiary gaps led to acquittals. Reference specific case titles and summaries from the provided historical cases.
+- For Rebuttal: Cite the provided cases where prosecution successfully overcame similar challenges, established compliance, or where courts upheld convictions despite defence arguments. Reference specific case titles and summaries from the provided historical cases.
 
 ### Tone:
 - Formal legal language
 - Court-ready
 - Practical and realistic
 - No speculation beyond FIR
-- Authoritative with case law citations where relevant
+- Authoritative with citations to the provided historical cases where relevant
 
+{historical_cases_text}
 ### FIR CONTENT:
 {pdf_content}
 

@@ -60,6 +60,7 @@ import os
 from dotenv import load_dotenv
 import logging
 from pydantic import BaseModel, Field
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Local imports
 from app.models.openai import llm_model
@@ -340,12 +341,26 @@ def search_indian_kanoon(search_query, max_results=10, fromdate="01-01-2000",
     
     logger.info(f"Searching Indian Kanoon with query: {search_query}")
     
+    # OPTIMIZATION: Use better defaults for relevance
+    if doctypes == "judgments":
+        doctypes = "judgments,supremecourt,highcourts"  # Prioritize authoritative courts
+    
+    if title_filter is None:
+        title_filter = "NDPS"  # Ensure NDPS relevance
+    
+    if maxcites is None:
+        maxcites = 5  # Get citations for relevance
+    
     # STEP 1: First, get unique document IDs from search results
-    # We'll search across multiple pages if needed to get enough unique results
+    # Use maxpages to fetch multiple pages in one call for speed
     unique_docs = []
     processed_ids = set()
     pagenum = 0
-    max_pages_to_search = 5  # Search up to 5 pages to find enough unique cases
+    max_pages_to_search = 2  # Reduced since we fetch more pages per call
+    MAX_DOCSIZE = 500000  # Filter out documents larger than 500K chars
+    
+    # Use maxpages on first call to get more results quickly
+    effective_maxpages = maxpages if maxpages else 10  # Fetch 10 pages in one call
     
     while len(unique_docs) < max_results and pagenum < max_pages_to_search:
         try:
@@ -360,7 +375,7 @@ def search_indian_kanoon(search_query, max_results=10, fromdate="01-01-2000",
                 author_filter=author_filter,
                 bench_filter=bench_filter,
                 maxcites=maxcites,
-                maxpages=maxpages if pagenum == 0 else None  # Only use maxpages on first page
+                maxpages=effective_maxpages if pagenum == 0 else None  # Use maxpages on first page
             )
             
             response = requests.post(search_url, headers=get_headers(), timeout=30)
@@ -389,16 +404,24 @@ def search_indian_kanoon(search_query, max_results=10, fromdate="01-01-2000",
                         logger.warning(f"Initial search returned 0 results. Query: '{search_query}'")
                     break
                 
-                # Collect unique document IDs
+                # Collect unique document IDs with docsize filtering
                 for doc in docs:
                     doc_id = doc.get('tid')
+                    docsize = doc.get('docsize', 0)  # Get document size from API
+                    
                     if doc_id and doc_id not in processed_ids:
+                        # Filter out documents that are too large
+                        if docsize > MAX_DOCSIZE:
+                            logger.debug(f"Skipping document {doc_id} - too large ({docsize:,} chars)")
+                            continue
+                            
                         processed_ids.add(doc_id)
                         unique_docs.append({
                             'tid': doc_id,
                             'title': doc.get('title', 'N/A'),
                             'headline': doc.get('headline', ''),
                             'docsource': doc.get('docsource', ''),
+                            'docsize': docsize,
                         })
                         
                         if len(unique_docs) >= max_results:
@@ -421,82 +444,81 @@ def search_indian_kanoon(search_query, max_results=10, fromdate="01-01-2000",
             break
         
         pagenum += 1
-        time.sleep(0.3)  # Small delay to avoid rate limiting
+        if pagenum > 0:  # Only delay between pages
+            time.sleep(0.2)  # Reduced delay
     
-    logger.info(f"Found {len(unique_docs)} unique documents, now fetching full content...")
+    logger.info(f"Found {len(unique_docs)} unique documents, now fetching full content in parallel...")
     
-    # STEP 2: Now fetch full document content for each unique document
-    results = []
-    for i, doc_info in enumerate(unique_docs[:max_results], 1):
+    # STEP 2: Fetch and process documents in parallel for speed
+    def fetch_and_process_doc(doc_info):
+        """Fetch and process a single document"""
         doc_id = doc_info['tid']
         title = doc_info['title']
         
-        logger.debug(f"[{i}/{len(unique_docs)}] Fetching full document: {title}")
-        
-        # Fetch full document text and metadata
-        full_content, doc_metadata = fetch_full_document(doc_id)
-        
-        if not full_content:
-            logger.warning(f"Could not fetch content for document {doc_id}, skipping")
-            continue
-        
-        # Limit content to ~80K tokens (leaving ~46K for prompt, schema, and response)
-        # Model limit is 128K tokens total
-        # Overhead: prompt (~1K) + schema (~222) + response (~500) + buffer = ~2K
-        # But we use 80K to be very safe and account for tokenization variations
-        original_length = len(full_content)
-        limited_content = limit_content_for_llm(full_content, max_content_tokens=80000)
-        limited_length = len(limited_content)
-        
-        if original_length != limited_length:
-            logger.info(f"Truncated case content from {original_length:,} to {limited_length:,} characters")
-        
-        # USE LLM TO SUMMARIZE THE CASE INDIVIDUALLY
-        # LLM will generate title, summary, case_number, year, and relevancy_score
-        case_title_llm = title  # Fallback to search result title
-        case_number = None
-        year = None
-        content_preview = ""
-        relevancy_score = 5
-        
         try:
-            logger.debug(f"Summarizing case {i}/{len(unique_docs)}: {title[:50]}... (content: {limited_length:,} chars)")
-            summary_result = summarizer_llm.invoke(
-                summary_prompt.format(
-                    case_title=title,  # Pass original title as context
-                    case_content=limited_content,
-                    search_query=search_query or "Not provided"
+            # Fetch full document
+            full_content, doc_metadata = fetch_full_document(doc_id)
+            
+            if not full_content:
+                logger.warning(f"Could not fetch content for document {doc_id}")
+                return None
+            
+            # Limit content
+            limited_content = limit_content_for_llm(full_content, max_content_tokens=80000)
+            
+            # Summarize with LLM
+            try:
+                summary_result = summarizer_llm.invoke(
+                    summary_prompt.format(
+                        case_title=title,
+                        case_content=limited_content,
+                        search_query=search_query or "Not provided"
+                    )
                 )
-            )
-            # Extract all fields from the structured output
-            case_title_llm = summary_result.case_title if hasattr(summary_result, 'case_title') else title
-            content_preview = summary_result.case_summary if hasattr(summary_result, 'case_summary') else str(summary_result)
-            case_number = summary_result.case_number if hasattr(summary_result, 'case_number') else None
-            year = summary_result.year if hasattr(summary_result, 'year') else None
-            relevancy_score = summary_result.relevancy_score if hasattr(summary_result, 'relevancy_score') else 5
+                
+                case_title_llm = summary_result.case_title if hasattr(summary_result, 'case_title') else title
+                content_preview = summary_result.case_summary if hasattr(summary_result, 'case_summary') else str(summary_result)
+                case_number = summary_result.case_number if hasattr(summary_result, 'case_number') else None
+                year = summary_result.year if hasattr(summary_result, 'year') else None
+                relevancy_score = summary_result.relevancy_score if hasattr(summary_result, 'relevancy_score') else 5
+                
+            except Exception as e:
+                logger.warning(f"Error summarizing case {title}: {e}")
+                content_preview = full_content[:500] + "..." if len(full_content) > 500 else full_content
+                relevancy_score = 5
+                case_title_llm = title
+                case_number = None
+                year = None
+            
+            case_id = f"{case_number}_{year}" if case_number and year else f"doc_{doc_id}"
+            
+            return {
+                "title": case_title_llm,
+                "url": f"https://indiankanoon.org/doc/{doc_id}/",
+                "summary": content_preview,
+                "case_number": case_number,
+                "year": year,
+                "case_id": case_id,
+                "score": float(relevancy_score)
+            }
+            
         except Exception as e:
-            logger.warning(f"Error summarizing case {title}: {e}")
-            # Fallback to first 500 chars if summarization fails
-            content_preview = full_content[:500] + "..." if len(full_content) > 500 else full_content
-            relevancy_score = 5  # Default score
+            logger.error(f"Error processing document {doc_id}: {e}")
+            return None
+    
+    # Fetch documents in parallel (5 concurrent workers)
+    results = []
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        future_to_doc = {executor.submit(fetch_and_process_doc, doc_info): doc_info 
+                         for doc_info in unique_docs[:max_results]}
         
-        # Create case ID
-        case_id = f"{case_number}_{year}" if case_number and year else f"doc_{doc_id}"
-        
-        case_data = {
-            "title": case_title_llm,  # Use LLM-generated title (7-8 words)
-            "url": f"https://indiankanoon.org/doc/{doc_id}/",
-            "summary": content_preview,
-            "case_number": case_number,
-            "year": year,
-            "case_id": case_id,
-            "score": float(relevancy_score)  # Relevancy score from LLM (0-10)
-        }
-        
-        results.append(case_data)
-        
-        # Small delay to avoid rate limiting
-        time.sleep(0.5)
+        for future in as_completed(future_to_doc):
+            result = future.result()
+            if result:
+                results.append(result)
+    
+    # Sort by relevancy score (highest first) to get most relevant cases
+    results.sort(key=lambda x: x.get('score', 0), reverse=True)
     
     logger.info(f"Successfully fetched {len(results)} cases from Indian Kanoon")
     return results
@@ -538,6 +560,7 @@ def historical_cases(state: WorkflowState) -> dict:
     logger.debug(f"FIR content length: {len(pdf_content)} characters")
     
     # Generate search query and keywords in one LLM call
+    # Focus on contextual details: minor, women, bag, etc.
     prompt = f"""Based on the following FIR content, create a search query and extract important keywords to find relevant court judgments in NDPS cases from Indian Kanoon database.
 
 FIR Content: {pdf_content}
@@ -545,22 +568,31 @@ FIR Content: {pdf_content}
 CRITICAL REQUIREMENTS:
 1. You MUST identify the specific substance/drug mentioned in the FIR (e.g., Ganja, Cannabis, Heroin, Cocaine, etc.)
 2. The search query MUST include the substance name to ensure relevance
-3. Extract other key facts: age of accused, quantity seized (small/intermediate/commercial), procedural issues, etc.
+3. Pay special attention to:
+   - If accused is a MINOR/JUVENILE - include "minor" or "juvenile" in search query
+   - If accused is a WOMAN/FEMALE - include "woman" or "female" in search query
+   - If contraband was found in BAG/LUGGAGE - include "bag" or "luggage" in search query
+   - Quantity seized (small/intermediate/commercial)
+   - Procedural issues
 
 For search_query:
 - Create a SHORT, focused search query (maximum 6-8 words)
 - MUST include the substance name (e.g., "Ganja", "Cannabis", "Heroin")
-- Include 1-2 key legal terms (e.g., "bail", "NDPS", "commercial quantity")
+- Include 1-2 key contextual terms: "bail", "NDPS", "minor" (if applicable), "woman" (if applicable), "bag" (if applicable), "commercial quantity", etc.
 - Keep it SIMPLE - avoid exact quantities, specific section numbers, or too many details
-- Examples: "Ganja NDPS bail", "Cannabis commercial quantity", "Heroin NDPS Act", "Ganja bail application"
+- Examples: 
+  * "Ganja NDPS minor bail" (if minor involved)
+  * "Cannabis NDPS woman bail" (if woman involved)
+  * "Heroin NDPS bag bail" (if found in bag)
+  * "Ganja NDPS bail" (general)
 - DO NOT include: exact quantities (like "36.525 kg"), specific section numbers, or lengthy descriptions
 
 For keywords:
 - MUST ALWAYS include "BAIL" as one of the keywords
 - Include the substance name and its common variations (e.g., "Ganja", "Cannabis", "Marijuana" for cannabis cases)
 - Include "NDPS" 
-- Include other relevant legal terms like: "bail", "acquittal", "conviction", "commercial quantity", "small quantity", "Section 50", "procedural compliance", etc.
-- Include case characteristics if relevant: "minor", "juvenile", "woman", etc.
+- Include contextual keywords: "minor" (if applicable), "juvenile" (if applicable), "woman" (if applicable), "female" (if applicable), "bag" (if applicable), "luggage" (if applicable)
+- Include other relevant legal terms like: "bail", "commercial quantity", "small quantity", "Section 50", etc.
 - Return keywords as a list of strings
 
 For substance_name:
@@ -570,11 +602,13 @@ For substance_name:
 
 Instructions:
 1. First identify the specific substance/drug mentioned in the FIR
-2. Extract other key facts (age of accused, quantity seized, procedural issues, etc.)
-3. Create a focused search query that includes the substance name and other relevant facts
-4. Extract 5-10 important keywords including substance name, its variations, "NDPS", "BAIL" (mandatory), and other relevant legal terms
-5. Ensure "BAIL" is always included in the keywords list
-6. Identify the primary substance name for validation purposes
+2. Check if accused is MINOR/JUVENILE - if yes, include in search query
+3. Check if accused is WOMAN/FEMALE - if yes, include in search query
+4. Check if contraband was found in BAG/LUGGAGE - if yes, include in search query
+5. Extract quantity seized and other key facts
+6. Create a focused search query that includes substance name + contextual terms (minor/woman/bag if applicable) + "bail"
+7. Extract 5-10 important keywords including substance name, variations, "NDPS", "BAIL" (mandatory), and contextual terms
+8. Identify the primary substance name
 
 Generate search_query, keywords, and substance_name:
 """
@@ -596,13 +630,16 @@ Generate search_query, keywords, and substance_name:
     processed_case_ids = set()
     
     try:
-        # Search using main search query
+        # Search using main search query with optimizations
         logger.info("Searching with main query...")
         results = search_indian_kanoon(
             search_query=search_query,
-            max_results=10,
-            fromdate="01-01-2000",
-            doctypes="judgments",
+            max_results=6,  # Focus on 5-6 extremely relevant cases
+            fromdate="01-01-2010",  # Focus on last 15 years for more relevant cases
+            doctypes="judgments",  # Will be upgraded to include supremecourt,highcourts in function
+            title_filter="NDPS",  # Ensure NDPS relevance
+            maxcites=5,  # Get citations for relevance
+            maxpages=10,  # Fetch 10 pages in one call for speed
             fir_context=pdf_content  # Pass FIR content for relevancy scoring
         )
         
@@ -637,16 +674,19 @@ Generate search_query, keywords, and substance_name:
             
             # Try each fallback query
             for fallback_query in fallback_queries[:3]:  # Limit to 3 fallback attempts
-                if len(historical_cases_list) >= 10:
+                if len(historical_cases_list) >= 6:  # Focus on 5-6 cases
                     break
                     
                 logger.info(f"Trying fallback query: {fallback_query}")
                 try:
                     fallback_results = search_indian_kanoon(
                         search_query=fallback_query,
-                        max_results=10 - len(historical_cases_list),
-                        fromdate="01-01-2000",
+                        max_results=6 - len(historical_cases_list),  # Focus on 5-6 cases
+                        fromdate="01-01-2010",  # Last 15 years
                         doctypes="judgments",
+                        title_filter="NDPS",
+                        maxcites=5,
+                        maxpages=10,
                         fir_context=pdf_content
                     )
                     
@@ -685,8 +725,8 @@ Generate search_query, keywords, and substance_name:
             }
             filtered_cases.append(case_data)
             
-            # Stop if we have enough cases
-            if len(filtered_cases) >= 10:
+            # Stop if we have enough cases (focus on 5-6 extremely relevant)
+            if len(filtered_cases) >= 6:
                 break
         
         historical_cases_list = filtered_cases

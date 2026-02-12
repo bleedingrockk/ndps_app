@@ -3,6 +3,7 @@ from app.langgraph.state import WorkflowState
 from app.models.openai import llm_model
 from typing import List
 from app.utils.retry import exponential_backoff_retry
+from app.utils.format_cases import format_historical_cases_for_prompt
 import logging
 import json
 
@@ -44,6 +45,9 @@ def generate_dos_and_donts(state: WorkflowState) -> dict:
     
     pdf_content = state["pdf_content_in_english"]
     
+    # Get historical cases if available
+    historical_cases = state.get("historical_cases", [])
+    historical_cases_text = format_historical_cases_for_prompt(historical_cases)
     
     # Construct content for LLM
     content_for_llm = f"""You are an expert legal advisor for NDPS cases. Based on the FIR content and legal sections below, generate SPECIFIC, CASE-SPECIFIC dos and donts for law enforcement officers handling THIS PARTICULAR CASE.
@@ -54,7 +58,7 @@ CRITICAL REQUIREMENTS:
 3. Reference specific legal sections where applicable
 4. Include procedural requirements specific to the facts of this case
 5. Mention specific evidence items, witnesses, and procedures from the FIR
-6. USE HISTORICAL CASES AND PRECEDENTS: Reference relevant case law, Supreme Court judgments, and High Court decisions from your knowledge that illustrate similar procedural requirements, common pitfalls, or successful prosecution strategies. Cite case names and key legal principles when relevant to strengthen the dos/donts.
+6. USE THE PROVIDED HISTORICAL CASES: Reference the actual historical cases provided below to illustrate similar procedural requirements, common pitfalls, or successful prosecution strategies. Cite specific case titles and key legal principles from these cases when relevant to strengthen the dos/donts.
 
 ========================
 OFFICIAL NDPS PROCEDURAL GUIDELINES
@@ -179,7 +183,7 @@ vii. Management of the forfeited property: The Competent Authority is also the a
 viii. Appeals: Any appeal against the order of a Competent Authority lies with the Appellate Tribunal for Forfeiture of Property.
 
 ========================
-
+{historical_cases_text}
 FIR Content:
 {pdf_content}
 
@@ -191,7 +195,7 @@ GENERATION RULES:
 - Reference specific locations: railway stations, platforms, addresses from FIR
 - Reference specific quantities and exhibit numbers from FIR
 - Reference specific legal sections that apply to this case
-- USE HISTORICAL CASES: When relevant, cite case law examples (e.g., "As held in State of Rajasthan v/s Parmanand, each accused must be individually informed...", "Following the precedent in [case name], ensure...", "To avoid the pitfalls seen in [case name], make sure...")
+- USE THE PROVIDED HISTORICAL CASES: When relevant, cite the actual historical cases provided above (e.g., "As seen in Case 1: [case title], each accused must be individually informed...", "Following the precedent in Case 2: [case title], ensure...", "To avoid the pitfalls seen in Case 3: [case title], make sure...")
 - For juveniles: mention specific safeguards for the named minor accused, referencing relevant case law if applicable
 - For women: mention specific protections if applicable, citing relevant precedents
 - For Section 50 compliance: mention specific requirements for this search/seizure, including individual communication to each accused (cite State of Rajasthan v/s Parmanand or similar cases)
@@ -226,17 +230,17 @@ EXAMPLES OF GOOD DON'TS (case-specific):
 
 Generate 8-10 specific dos and 8-10 specific donts that are directly tied to THIS case's facts, evidence, accused, witnesses, dates, locations, and legal requirements.
 
-IMPORTANT: Wherever relevant, strengthen your dos/donts by referencing historical NDPS cases, Supreme Court judgments, or High Court decisions from your knowledge that illustrate:
+IMPORTANT: Wherever relevant, strengthen your dos/donts by referencing the actual historical cases provided above that illustrate:
 - Successful prosecution strategies that should be followed
 - Common procedural pitfalls that led to acquittals (to avoid)
 - Legal precedents that establish mandatory requirements
 - Case law that clarifies procedural compliance standards
 
-Examples of incorporating case law:
-- "As established in [Case Name], ensure individual Section 50 notice to each accused..."
-- "Following the precedent in [Case Name], verify that..."
-- "To avoid the acquittal scenario in [Case Name], make certain that..."
-- "As held by the Supreme Court in [Case Name], it is mandatory to..."
+Examples of incorporating the provided cases:
+- "As seen in Case 1: [case title from above], ensure individual Section 50 notice to each accused..."
+- "Following the precedent in Case 2: [case title from above], verify that..."
+- "To avoid the acquittal scenario in Case 3: [case title from above], make certain that..."
+- "As established in Case 4: [case title from above], it is mandatory to..."
 
 This will make the dos/donts more authoritative and legally grounded."""
     

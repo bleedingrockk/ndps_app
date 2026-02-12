@@ -4,6 +4,7 @@ from app.models.openai import llm_model
 from typing import List
 from app.rag.query_all import query_forensic
 from app.utils.retry import exponential_backoff_retry
+from app.utils.format_cases import format_historical_cases_for_prompt
 import logging
 
 logger = logging.getLogger(__name__)
@@ -30,6 +31,10 @@ def generate_evidence_checklist(state: WorkflowState) -> dict:
     
     pdf_content = state["pdf_content_in_english"]
     logger.debug(f"FIR content length: {len(pdf_content)} characters")
+    
+    # Get historical cases if available
+    historical_cases = state.get("historical_cases", [])
+    historical_cases_text = format_historical_cases_for_prompt(historical_cases)
     
     llm_with_structured_output = llm_model.with_structured_output(InvestigationCheckpoints)
     
@@ -93,6 +98,7 @@ Output: List investigation checkpoints that need verification/action."""
     checklist_prompt = f"""
 You are an expert forensic investigator and legal consultant for NDPS cases.
 
+{historical_cases_text}
 FIR Content:
 {pdf_content}
 
@@ -101,7 +107,7 @@ Forensic Guidelines Retrieved:
 
 Task: Create a COMPREHENSIVE EVIDENCE CHECKLIST with critical items and admissibility requirements.
 
-USE HISTORICAL CASES AND PRECEDENTS: Reference relevant case law, Supreme Court judgments, and High Court decisions from your knowledge that illustrate:
+USE THE PROVIDED HISTORICAL CASES: Reference the actual historical cases provided above that illustrate:
 - Evidence admissibility requirements and standards
 - Cases where evidence was rejected due to procedural lapses
 - Successful prosecution strategies based on proper evidence handling
@@ -139,12 +145,12 @@ REQUIREMENTS:
 - Reference concrete FIR details (not generic placeholders)
 - Cover 10-15 evidence items comprehensively
 - Use actual names, numbers, and specifics from the FIR wherever available
-- INCORPORATE CASE LAW: Where relevant, cite historical cases that illustrate:
-  * Evidence admissibility standards (e.g., "As held in [Case Name], the panchnama must...")
-  * Cases where evidence was rejected (e.g., "In [Case Name], the court rejected evidence because...")
-  * Successful prosecution precedents (e.g., "Following [Case Name], ensure that...")
-  * Legal requirements established by courts (e.g., "The Supreme Court in [Case Name] held that...")
-- Use case citations to strengthen the importance and admissibility requirements of each evidence item
+- INCORPORATE THE PROVIDED HISTORICAL CASES: Where relevant, cite the actual historical cases provided above that illustrate:
+  * Evidence admissibility standards (e.g., "As seen in Case 1: [case title from above], the panchnama must...")
+  * Cases where evidence was rejected (e.g., "In Case 2: [case title from above], the court rejected evidence because...")
+  * Successful prosecution precedents (e.g., "Following Case 3: [case title from above], ensure that...")
+  * Legal requirements established by courts (e.g., "As established in Case 4: [case title from above], the court held that...")
+- Use the provided case citations to strengthen the importance and admissibility requirements of each evidence item
 
 End with:
 (Legal importance: Each piece ties the accused to possession for sale. NDPS requires physical possession + intent to traffic. The combination of large quantity, travel documents, cash, and confession strongly establishes intent. Proper packaging and sealing with video/photos under e-Sakshya provides chain-of-custody.)

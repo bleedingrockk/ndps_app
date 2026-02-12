@@ -3,6 +3,7 @@ from app.langgraph.state import WorkflowState
 from app.models.openai import llm_model
 from typing import List, Dict
 from app.utils.retry import exponential_backoff_retry
+from app.utils.format_cases import format_historical_cases_for_prompt
 import logging
 import json
 
@@ -83,20 +84,28 @@ def generate_potential_prosecution_weaknesses(state: WorkflowState) -> dict:
         raise ValueError("pdf_content_in_english is required for prosecution weaknesses generation")
     
     pdf_content = state["pdf_content_in_english"]
+    
+    # Get historical cases if available
+    historical_cases = state.get("historical_cases", [])
+    historical_cases_text = format_historical_cases_for_prompt(historical_cases)
 
     # Construct content for LLM
-    content_for_llm = f"""Based on the following FIR content and prosecution guidelines, identify potential prosecution weaknesses that could affect this case:
+    content_for_llm = f"""Based on the following FIR content, prosecution guidelines, and relevant historical cases, identify potential prosecution weaknesses that could affect this case:
 
+{historical_cases_text}
 FIR Content:
 {pdf_content}
 
 PROSECUTION GUIDELINES AND COMMON WEAKNESSES:
 {prompt}
 
-Analyze the FIR content against these common prosecution weaknesses. For each relevant weakness you identify:
+Analyze the FIR content against these common prosecution weaknesses and the provided historical cases. For each relevant weakness you identify:
 1. Provide a clear heading describing the weakness
 2. Explain specifically how this weakness applies to the current case
 3. Reference specific details from the FIR that indicate this potential weakness
+4. Where relevant, reference the provided historical cases that illustrate similar weaknesses that led to acquittals or case failures
+
+USE THE PROVIDED HISTORICAL CASES: Reference the actual historical cases provided above to illustrate how similar weaknesses affected other cases. For example: "As seen in Case 1: [case title], failure to [weakness] resulted in [outcome]..."
 
 Generate a comprehensive list of potential prosecution weaknesses that investigators should address to strengthen the case."""
     
